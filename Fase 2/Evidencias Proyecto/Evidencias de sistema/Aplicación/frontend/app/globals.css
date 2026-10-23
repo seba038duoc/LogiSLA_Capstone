@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------------
+   Sistema de diseño de LogiSLA
+
+   - Marca: azul marino (el mismo de la cabecera y el logo).
+   - Señales: cada resultado de auditoría tiene un color propio y siempre
+     el mismo en toda la app (franja, etiquetas, cifras):
+       cumplido · incumplido · en tránsito · sin regla
+   - Los colores "semánticos" (papel, superficie, tinta...) cambian solos
+     en modo oscuro; por eso los componentes NUNCA usan bg-white ni
+     text-slate-*, sino bg-superficie, text-tinta, etc.
+   ------------------------------------------------------------------------ */
+
+@theme {
+  --color-brand-50: #f0f5fb;
+  --color-brand-100: #dce7f3;
+  --color-brand-200: #b9cee6;
+  --color-brand-300: #8dadd0;
+  --color-brand-400: #5c87b4;
+  --color-brand-500: #3c6996;
+  --color-brand-600: #2c517a;
+  --color-brand-700: #223f61;
+  --color-brand-800: #1a3049;
+  --color-brand-900: #142438;
+  --color-brand-950: #0c1622;
+
+  --font-sans: "Archivo", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+}
+
+:root {
+  --papel: #eef1f5;
+  --superficie: #ffffff;
+  --hundido: #f5f7fa;
+  --tinta: #142438;
+  --tinta-suave: #556377;
+  --linea: #d5dce6;
+  --accion: #1a3049;
+  --accion-fuerte: #0c1622;
+  --sobre-accion: #ffffff;
+  --foco: #3c6996;
+
+  --cumplido: #0a7558;
+  --incumplido: #b3261e;
+  --transito: #9a5b00;
+  --sin-regla: #6b7789;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --papel: #0a121d;
+    --superficie: #121d2c;
+    --hundido: #0e1826;
+    --tinta: #e7ecf3;
+    --tinta-suave: #9ba9bc;
+    --linea: #26354a;
+    --accion: #b9cee6;
+    --accion-fuerte: #dce7f3;
+    --sobre-accion: #0c1622;
+    --foco: #8dadd0;
+
+    --cumplido: #4ccfa3;
+    --incumplido: #ff8d80;
+    --transito: #f2b552;
+    --sin-regla: #8e9bb0;
+  }
+}
+
+@theme inline {
+  --color-papel: var(--papel);
+  --color-superficie: var(--superficie);
+  --color-hundido: var(--hundido);
+  --color-tinta: var(--tinta);
+  --color-tinta-suave: var(--tinta-suave);
+  --color-linea: var(--linea);
+  --color-accion: var(--accion);
+  --color-accion-fuerte: var(--accion-fuerte);
+  --color-sobre-accion: var(--sobre-accion);
+  --color-foco: var(--foco);
+  --color-cumplido: var(--cumplido);
+  --color-incumplido: var(--incumplido);
+  --color-transito: var(--transito);
+  --color-sin-regla: var(--sin-regla);
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: var(--font-sans);
+}
+
+/* Titulares: Archivo un poco más ancha y apretada, como rotulado de carga. */
+.titular {
+  font-stretch: 112%;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+/* Cifras alineadas en columnas (montos, horas, conteos). */
+.cifras {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Foco de teclado visible y consistente en toda la app. */
+:where(a, button, input, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+/* Segmentos de la franja de cumplimiento. "En tránsito" va achurado y
+   "sin regla"/"pendiente" van huecos, para que la franja se entienda
+   también sin distinguir colores (daltonismo, impresión en B/N). */
+.seg-cumplido {
+  background: var(--cumplido);
+}
+.seg-incumplido {
+  background: var(--incumplido);
+}
+.seg-transito {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--transito) 0 3px,
+    color-mix(in srgb, var(--transito) 30%, transparent) 3px 6px
+  );
+}
+.seg-sin-regla {
+  background: color-mix(in srgb, var(--sin-regla) 22%, transparent);
+  box-shadow: inset 0 0 0 1px var(--sin-regla);
+}
+.seg-pendiente {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--linea);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

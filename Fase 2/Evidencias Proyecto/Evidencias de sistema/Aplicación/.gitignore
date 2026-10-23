@@ -1,0 +1,12 @@
+node_modules/
+.next/
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.env
+.env.local
+*.db
+*.sqlite
+*.sqlite3
+debug_trace.txt
