@@ -9,7 +9,7 @@ duplica).
 Uso:
     python scripts/seed_carriers_and_rules.py
 """
-from app.database import SesionLocal
+from app.database import Base, SesionLocal, motor
 from app.models import Transportista, ReglaSLA
 
 # (nombre, horas_habiles_maximas_sla, multa_por_incumplimiento_clp)
@@ -21,6 +21,8 @@ TRANSPORTISTAS_POR_DEFECTO = [
 ]
 
 if __name__ == "__main__":
+    # Crea las tablas si la base de datos todavía está vacía (primera ejecución).
+    Base.metadata.create_all(bind=motor)
     db = SesionLocal()
     sembrados = []
 

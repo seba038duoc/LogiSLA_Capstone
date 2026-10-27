@@ -36,7 +36,7 @@ app = FastAPI(
 )
 
 # El frontend (Next.js) corre en otro origen (localhost:3000 en dev, otro
-# dominio en Cloud Run/Vercel en el Sprint 4), así que el navegador
+# dominio en Cloud Run en el Sprint 5), así que el navegador
 # necesita estos headers CORS o bloquea las llamadas fetch(). En dev
 # dejamos localhost:3000/3001 fijos; ALLOWED_ORIGINS permite agregar el
 # dominio real de producción sin tocar código.

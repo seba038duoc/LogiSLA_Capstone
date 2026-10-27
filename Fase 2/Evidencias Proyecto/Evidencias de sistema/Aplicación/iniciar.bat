@@ -1,6 +1,13 @@
 @echo off
 setlocal
 cd /d "%~dp0"
+if not exist "%~dp0backend\requirements.txt" (
+    echo [ERROR] No se encontro la carpeta backend junto a este script.
+    echo Ejecuta iniciar.bat desde la carpeta LogiSLA del proyecto.
+    echo.
+    pause
+    exit /b 1
+)
 set "TRACE=%~dp0debug_trace.txt"
 echo ===== nueva corrida %DATE% %TIME% ===== > "%TRACE%"
 
@@ -8,7 +15,7 @@ echo ============================================
 echo   LogiSLA - levantando backend + frontend
 echo ============================================
 echo.
-echo Requisitos: Python 3.10 a 3.14 (version estable) y Node.js 18+ instalados en Windows,
+echo Requisitos: Python 3.10 a 3.14 (version estable) y Node.js 20.9 o superior instalados en Windows,
 echo con la casilla "Add to PATH" marcada durante la instalacion.
 echo.
 
@@ -61,10 +68,23 @@ if errorlevel 1 (
     exit /b 1
 )
 
+set "NODE_MAJOR="
+for /f "tokens=1 delims=v." %%M in ('node --version') do set "NODE_MAJOR=%%M"
+if not defined NODE_MAJOR set "NODE_MAJOR=0"
+if %NODE_MAJOR% LSS 20 (
+    echo [ERROR] El frontend usa Next.js 16, que necesita Node.js 20.9 o superior.
+    echo Version instalada:
+    node --version
+    echo Instala la version LTS desde https://nodejs.org/ y vuelve a ejecutar iniciar.bat.
+    echo.
+    pause
+    exit /b 1
+)
+
 echo TRACE: checks de python/node/npm OK >> "%TRACE%"
 
 REM --- Backend ---
-cd backend
+cd /d "%~dp0backend"
 echo TRACE: entre a backend >> "%TRACE%"
 
 REM Si ya existe un .venv creado con una version no soportada, se rehace.
@@ -82,7 +102,7 @@ echo Creando entorno virtual de Python...
 
 if not exist .venv\Scripts\python.exe (
     echo [ERROR] No se pudo crear el entorno virtual ^(.venv^).
-    echo Revisa que Python este bien instalado y volve a intentar.
+    echo Revisa que Python este bien instalado y vuelve a intentar.
     echo.
     pause
     exit /b 1
@@ -95,8 +115,8 @@ echo Si algo falla, el detalle queda guardado en backend\install.log
 "%VENV_PY%" -m pip install -r requirements.txt > install.log 2>&1
 if errorlevel 1 (
     echo [ERROR] Fallo la instalacion de dependencias del backend.
-    echo Abri el archivo backend\install.log para ver el detalle,
-    echo o pegaselo a Claude para que te ayude a interpretarlo.
+    echo Abre el archivo backend\install.log para ver el detalle,
+    echo El final de ese archivo indica que dependencia fallo y por que.
     echo.
     pause
     exit /b 1
@@ -107,19 +127,12 @@ echo TRACE: pip install OK >> "%TRACE%"
 set DATABASE_URL=sqlite:///./logisla.db
 set "PYTHONPATH=%~dp0backend"
 
-if exist company_id.txt (
-    for %%A in (company_id.txt) do if %%~zA==0 del company_id.txt
-)
-if not exist company_id.txt (
-    echo Creando empresa de prueba...
-    "%VENV_PY%" scripts\seed_pilot_company.py "Retail Piloto SpA" "76.987.654-3" > company_id.txt
-)
-for %%A in (company_id.txt) do if %%~zA==0 (
-    echo [ATENCION] No se pudo crear la empresa de prueba automaticamente.
-    echo Podes intentarlo a mano mas tarde, parado en la carpeta backend:
-    echo   set DATABASE_URL=sqlite:///./logisla.db
-    echo   set PYTHONPATH=%%cd%%
-    echo   .venv\Scripts\python.exe scripts\seed_pilot_company.py "Retail Piloto SpA" "76.987.654-3"
+REM Empresa de prueba (idempotente: si ya existe, no se duplica). El script
+REM crea las tablas si la base de datos esta vacia.
+echo Preparando empresa de prueba...
+"%VENV_PY%" scripts\seed_pilot_company.py "Retail Piloto SpA" "76.987.654-3" > company_id.txt 2> seed_empresa.log
+if errorlevel 1 (
+    echo [ATENCION] No se pudo crear la empresa de prueba. Detalle en backend\seed_empresa.log
     echo.
 )
 echo TRACE: company_id OK >> "%TRACE%"
@@ -140,11 +153,11 @@ echo TRACE: por lanzar backend >> "%TRACE%"
 start "LogiSLA - Backend" cmd /k ""%~dp0backend\_run_backend.bat""
 echo TRACE: backend lanzado >> "%TRACE%"
 
-cd ..
+cd /d "%~dp0"
 echo TRACE: volvi a la raiz >> "%TRACE%"
 
 REM --- Frontend ---
-cd frontend
+cd /d "%~dp0frontend"
 echo TRACE: entre a frontend >> "%TRACE%"
 
 if not exist node_modules (
@@ -155,8 +168,8 @@ if not exist node_modules (
     echo TRACE: npm install termino con errorlevel %errorlevel% >> "%TRACE%"
     if errorlevel 1 (
         echo [ERROR] Fallo "npm install".
-        echo Abri el archivo frontend\install.log para ver el detalle,
-        echo o pegaselo a Claude para que te ayude a interpretarlo.
+        echo Abre el archivo frontend\install.log para ver el detalle,
+        echo El final de ese archivo indica que dependencia fallo y por que.
         echo.
         pause
         exit /b 1
@@ -172,7 +185,7 @@ echo Levantando el frontend en una ventana nueva (puerto 3000)...
 start "LogiSLA - Frontend" cmd /k ""%~dp0frontend\_run_frontend.bat""
 echo TRACE: frontend lanzado >> "%TRACE%"
 
-cd ..
+cd /d "%~dp0"
 
 echo.
 echo Esperando a que ambos servidores arranquen...
@@ -187,8 +200,8 @@ echo   LogiSLA esta listo en http://localhost:3000
 echo   La empresa de prueba ya aparece elegida en la pagina.
 echo ============================================
 echo.
-echo Dejaste dos ventanas nuevas abiertas (Backend y Frontend) - no las cierres
-echo mientras uses la pagina. Cuando termines, simplemente cerralas.
+echo Quedaron dos ventanas nuevas abiertas (Backend y Frontend) - no las cierres
+echo mientras uses la pagina. Cuando termines, simplemente cierralas.
 echo.
 echo TRACE: fin del script, esperando pause >> "%TRACE%"
 pause

@@ -1,46 +1,68 @@
 # LogiSLA: Auditoría Inteligente de SLA de Transporte
 
-LogiSLA es una plataforma SaaS orientada a empresas de e-commerce y retail que busca resolver un dolor crítico en la logística: auditar de forma automática y sistemática el cumplimiento de los Acuerdos de Nivel de Servicio (SLA) de los transportistas. 
+LogiSLA es una plataforma SaaS orientada a empresas de e-commerce y retail que busca resolver un problema crítico de la logística: auditar de forma automática y sistemática el cumplimiento de los Acuerdos de Nivel de Servicio (SLA) de los transportistas.
 
-Mediante el procesamiento masivo de datos y la aplicación de **Inteligencia Artificial Generativa**, el sistema detecta atrasos, calcula multas contractuales y genera automáticamente los documentos de reclamo.
+El sistema recibe un archivo masivo de envíos, calcula en horas hábiles qué guías incumplieron el plazo pactado y cuánto corresponde reclamar en multas. En el Sprint 4 se incorpora IA generativa para redactar automáticamente la carta de reclamo y el resumen ejecutivo.
 
----
-
-## 🤖 Integración de Inteligencia Artificial (IA Generativa)
-Este proyecto va más allá del procesamiento tradicional de datos al incorporar un **Módulo de IA Generativa de vanguardia** como pieza clave del valor entregado al usuario
-
-Para cumplir con los más altos estándares de exigencia técnica, el sistema integra la **API de Claude (Anthropic)**, la cual se encarga de:
-* **Generación automatizada de documentos:** La IA redacta cartas de reclamo formales y resúmenes ejecutivos de alto nivel basados en los datos duros procesados por el motor.
-* **Traducción de datos a lenguaje de negocios:** Toma miles de registros de envíos atrasados y los convierte en un informe estructurado, listo para ser enviado a empresas como Chilexpress o Starken.
-* Este enfoque demuestra la capacidad del equipo para orquestar motores determinísticos (cálculo matemático) con modelos probabilísticos (IA) en una misma arquitectura de software.
+Proyecto de título Capstone · Ingeniería en Informática · Duoc UC · 2026.
 
 ---
 
-## ⚙️ Características Principales
+## 📍 Estado del proyecto (cierre de la Fase 2, semana 12)
 
-* **Motor de Auditoría Propio:** Un algoritmo 100% construido por el equipo en Python (Pandas y Workalendar) que calcula tiempos de tránsito efectivos, descontando fines de semana y feriados chilenos mediante procesamiento vectorizado.
-* **Ingesta Masiva de Datos:** Capacidad para procesar archivos CSV y Excel de gran volumen (10.000+ filas) con un sistema inteligente de mapeo de columnas y procesamiento asíncrono en segundo plano.
-* **Motor de Reglas SLA Dinámico:** Resolución de conflictos de contratos mediante especificidad (ej. Carrier + Zona Origen + Zona Destino), calculando multas exactas o dejándolas pendientes de facturación si falta el costo de flete.
-* **Dashboard Interactivo:** Panel de control con métricas clave (KPIs), gráficos interactivos (Recharts) y tablas filtrables por "semáforo" de cumplimiento.
+| Sprint | Fechas | Alcance | Estado |
+|---|---|---|---|
+| 1 | Semanas 1 a 6 | Modelo de datos (5 tablas), API de carga y reconocimiento automático de columnas | ✅ Completado |
+| 2 | Semanas 7 y 8 | Motor de auditoría: horas hábiles, feriados chilenos y multas | ✅ Completado |
+| 3 | Semanas 9 y 10 | Consultas, dashboard y tabla de guías | ✅ Completado |
+| 4 | 28 oct al 9 nov | IA generativa, gráficos, PostgreSQL con Alembic, Docker y pruebas del frontend | ⏳ Por iniciar |
+| 5 | 10 al 16 nov | CI/CD, pruebas E2E, despliegue en Cloud Run e informe final | ⏳ Por iniciar |
 
----
-
-## 🛠️ Stack Tecnológico
-
-El proyecto utiliza una arquitectura moderna alojada íntegramente en la nube de Google:
-
-* **Frontend & UX:** Next.js 14 (App Router), TypeScript, Tailwind CSS, Shadcn/ui, Recharts.
-* **Backend & API:** Python (FastAPI), Pandas (vectorizado), Workalendar, SQLAlchemy.
-* **Inteligencia Artificial:** API Claude (Anthropic) para generación de reportes.
-* **Base de Datos:** PostgreSQL.
-* **Infraestructura Cloud (GCP):** Cloud Run (contenedores Docker), Cloud SQL, Cloud Storage, Secret Manager.
-* **CI/CD & Calidad:** GitHub Actions para despliegue automatizado, testeado con PyTest (Backend), Jest/RTL y Playwright (Frontend E2E).
+- **17 de noviembre (semana 15):** proyecto terminado y funcionando.
+- **1 de diciembre (semana 17):** defensa ante la comisión.
 
 ---
 
-## 👥 Equipo de Desarrollo (Capstone Duoc UC)
+## ⚙️ Funcionalidades disponibles
 
-Este proyecto está pensado para ser desarrollado en un plazo de 12 semanas (6 Sprints), dividido en responsabilidades claras:
+* **Carga de archivos CSV y Excel:** reconoce automáticamente las columnas aunque tengan nombres distintos (por ejemplo, «N° Guía», «Numero de Guia» o «tracking_number»). Si faltan columnas obligatorias, rechaza el archivo indicando cuáles, sin escribir datos en la base.
+* **Motor de auditoría propio:** desarrollado por el equipo en Python con Pandas y Workalendar. Calcula el tiempo de tránsito en horas hábiles (lunes a viernes, de 09:00 a 18:00), descuenta fines de semana y feriados chilenos, y aplica la multa fija por guía definida en la regla SLA de cada transportista. Es determinístico y está cubierto por pruebas automatizadas.
+* **Dashboard:** listado de lotes, monto por reclamar, franja de cumplimiento, desglose por transportista y tabla de guías con filtros, búsqueda, paginación y descarga de incumplimientos en CSV.
 
-* **Sebastián Acuña** – Desarrollador Backend & GCP: Responsable del motor de auditoría en Python, modelado en PostgreSQL, integración de la IA Generativa (API Claude) y despliegue CI/CD en Google Cloud.
-* **José Salvatierra** – Desarrollador Frontend & UX: Responsable de la interfaz en Next.js, mapeo de datos, dashboard de KPIs, exportación de reportes y pruebas End-to-End.
+## 🤖 IA generativa (Sprint 4)
+
+El módulo de IA usará la API de Claude (Anthropic) para redactar la carta de reclamo por transportista y el resumen ejecutivo del lote, a partir de los datos ya calculados por el motor. La IA solo redactará texto: las cifras y el anexo de guías y multas los genera siempre el sistema. Si la API falla o demora, el documento se generará con una plantilla de respaldo.
+
+---
+
+## 🛠️ Stack tecnológico
+
+* **Frontend:** Next.js 16 (App Router), React 19, TypeScript y Tailwind CSS.
+* **Backend y API:** Python, FastAPI, Pandas, Workalendar y SQLAlchemy.
+* **Base de datos:** SQLite en desarrollo local y PostgreSQL 16 con migraciones Alembic para el despliegue (Sprint 4).
+* **Calidad:** PyTest en el backend (38 pruebas automatizadas); node:test para el frontend (Sprint 4) y Playwright para las pruebas E2E (Sprint 5).
+* **Nube (Sprint 5):** Google Cloud Platform: Cloud Run (contenedores Docker), Cloud SQL y Secret Manager, con CI/CD en GitHub Actions.
+* **IA (Sprint 4):** API de Claude (Anthropic).
+
+---
+
+## 🚀 Cómo ejecutarlo
+
+El código está en `Fase 2/Evidencias Proyecto/Evidencias de sistema/Aplicación/`. En Windows, basta con hacer doble clic en `iniciar.bat`. Las instrucciones completas y los requisitos (Python 3.10 a 3.14 y Node.js 20.9 o superior) están en el `LEEME.md` de esa carpeta.
+
+---
+
+## 📁 Estructura del repositorio
+
+* `Fase 1/`: planificación del proyecto.
+* `Fase 2/`: desarrollo. Contiene la guía de avance, los diarios de reflexión, el código, la base de datos, las evidencias ágiles y la presentación.
+* `Fase 3/`: cierre (se completa al finalizar el proyecto).
+
+---
+
+## 👥 Equipo de desarrollo
+
+Proyecto desarrollado con metodología Scrum en 5 sprints a lo largo de 15 semanas:
+
+* **Sebastián Acuña:** desarrollador backend y GCP. Responsable del motor de auditoría, el modelo de datos, el módulo de IA generativa (API de Claude) y el despliegue con CI/CD en Google Cloud.
+* **José Salvatierra:** desarrollador frontend y UX. Responsable de la interfaz en Next.js, el módulo de carga, el dashboard, la exportación de reportes y las pruebas E2E.

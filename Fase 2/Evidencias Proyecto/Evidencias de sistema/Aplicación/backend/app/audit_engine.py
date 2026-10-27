@@ -7,7 +7,7 @@ corresponde pagar. Es 100% determinístico (Pandas ya se usó en la ingesta;
 acá usamos workalendar para el calendario chileno) — sin llamadas a
 ninguna API de IA, tal como quedó documentado en el argumento académico
 del proyecto (ver LogiSLA_Propuesta_IA): el cálculo de negocio es de
-autoría propia, la IA (Sprint 3) sólo redacta texto a partir de estos
+autoría propia, la IA (Sprint 4) sólo redactará texto a partir de estos
 resultados ya calculados.
 
 Decisiones de diseño:

@@ -1,0 +1,78 @@
+Ejecución de consultas_verificacion.sql
+PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit
+Fecha: 2026-10-27 00:14 (hora de Chile)
+
+1. Cantidad de filas por tabla (esperado: 1 empresa, 4 transportistas, 4 reglas, 1 lote, 60 envíos)
+      tabla      | filas 
+-----------------+-------
+ empresas        |     1
+ transportistas  |     4
+ reglas_sla      |     4
+ lotes_auditoria |     1
+ envios          |    60
+(5 rows)
+
+2. Integridad referencial: envíos sin lote o con transportista inexistente (esperado: 0 y 0)
+ envios_sin_lote | envios_con_transportista_invalido 
+-----------------+-----------------------------------
+               0 |                                 0
+(1 row)
+
+3. Regla SLA activa de cada transportista (esperado: 4 filas, una por transportista)
+  transportista   | horas_habiles_maximas | multa_por_incumplimiento | activa 
+------------------+-----------------------+--------------------------+--------
+ Blue Express     |                    48 |                    15000 | t
+ Chilexpress      |                    48 |                    15000 | t
+ Correos de Chile |                    72 |                    10000 | t
+ Starken          |                    60 |                    12000 | t
+(4 rows)
+
+4. Clasificación de las guías del lote (esperado: 36 en plazo, 13 fuera de plazo, 11 en tránsito)
+   resultado    | guias 
+----------------+-------
+ EN_PLAZO       |    36
+ EN_TRANSITO    |    11
+ FUERA_DE_PLAZO |    13
+(3 rows)
+
+5. Resumen del lote (esperado: 49 auditadas, 13 fuera de plazo, 73,5 % de cumplimiento, $170.000)
+ guias_auditadas | fuera_de_plazo | cumplimiento_pct | multa_total 
+-----------------+----------------+------------------+-------------
+              49 |             13 |             73.5 |      170000
+(1 row)
+
+6. Desglose por transportista (esperado: Starken 5 / $60.000, Chilexpress 4 / $60.000, Blue Express 2 / $30.000, Correos de Chile 2 / $20.000)
+  transportista   | guias | fuera_de_plazo | multa 
+------------------+-------+----------------+-------
+ Chilexpress      |    14 |              4 | 60000
+ Starken          |    25 |              5 | 60000
+ Blue Express     |     7 |              2 | 30000
+ Correos de Chile |    14 |              2 | 20000
+(4 rows)
+
+7. Coherencia del cálculo: multa y atraso según la regla SLA (esperado: 0 filas inconsistentes)
+ numero_guia | nombre | incumplio_sla | horas_atraso | monto_multa 
+-------------+--------+---------------+--------------+-------------
+(0 rows)
+
+8. Guías en tránsito no deben tener resultado (esperado: 0)
+ en_transito_con_resultado 
+---------------------------
+                         0
+(1 row)
+
+9. Restricciones únicas: RUT de empresa y nombre de transportista duplicados (esperado: ERROR por clave duplicada)
+psql:consultas_verificacion.sql:83: ERROR:  duplicate key value violates unique constraint "transportistas_nombre_key"
+DETAIL:  Key (nombre)=(Starken) already exists.
+psql:consultas_verificacion.sql:84: ERROR:  duplicate key value violates unique constraint "empresas_rut_key"
+DETAIL:  Key (rut)=(76.987.654-3) already exists.
+10. Guías fuera de plazo con mayor atraso (detalle para la carta de reclamo)
+  numero_guia  |  transportista   |   destino    | horas_atraso | monto_multa 
+---------------+------------------+--------------+--------------+-------------
+ LSA-202600019 | Chilexpress      | Temuco       |           38 |       15000
+ LSA-202600050 | Chilexpress      | Temuco       |           34 |       15000
+ LSA-202600047 | Chilexpress      | Antofagasta  |           33 |       15000
+ LSA-202600034 | Chilexpress      | Antofagasta  |           29 |       15000
+ LSA-202600036 | Correos de Chile | Puerto Montt |           26 |       10000
+(5 rows)
+
