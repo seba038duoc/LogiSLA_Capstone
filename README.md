@@ -48,7 +48,7 @@ El módulo de IA usará la API de Claude (Anthropic) para redactar la carta de r
 
 ## 🚀 Cómo ejecutarlo
 
-El código está en `Fase 2/Evidencias Proyecto/Evidencias de sistema/Aplicación/`. En Windows, basta con hacer doble clic en `iniciar.bat`. Las instrucciones completas y los requisitos (Python 3.10 a 3.14 y Node.js 20.9 o superior) están en el `LEEME.md` de esa carpeta.
+El código está en `Fase 2/Evidencias Proyecto/Evidencias de sistema/Aplicación/`. En Windows, basta con hacer doble clic en `iniciar.bat`. Requisitos: Python 3.10 a 3.14 y Node.js 20.9 o superior.
 
 ---
 

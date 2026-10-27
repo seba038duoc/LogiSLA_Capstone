@@ -1,0 +1,3 @@
+# Los scripts de Windows (.bat) deben tener saltos de línea CRLF
+# para que cmd.exe los ejecute correctamente, también al descargar el ZIP desde GitHub.
+*.bat text eol=crlf
