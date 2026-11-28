@@ -1,0 +1,74 @@
+/*
+ * Fuentes locales de LogiSLA (ver LEEME.txt en esta carpeta).
+ * Se carga con un <link> en app/layout.tsx, fuera del proceso de compilación
+ * de Next.js: si un archivo falta, el navegador usa la siguiente fuente de la
+ * lista y el build no se ve afectado.
+ */
+
+@font-face {
+  font-family: "Archivo LogiSLA";
+  src: url("/fonts/Archivo-Variable.ttf") format("truetype");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+}
+
+/* Inter: textos de toda la aplicación (licencia libre SIL OFL 1.1, ver Inter-OFL.txt).
+   Letra de lectura en pantalla, con números de ancho fijo para las tablas. */
+@font-face {
+  font-family: "Inter LogiSLA";
+  src: url("/fonts/Inter-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter LogiSLA";
+  src: url("/fonts/Inter-Italic.woff") format("woff");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter LogiSLA";
+  src: url("/fonts/Inter-Medium.woff") format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter LogiSLA";
+  src: url("/fonts/Inter-SemiBold.woff") format("woff");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter LogiSLA";
+  src: url("/fonts/Inter-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter LogiSLA";
+  src: url("/fonts/Inter-BoldItalic.woff") format("woff");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Carade";
+  src:
+    local("Carade Personal Use Only"),
+    local("CaradePersonalUseOnly-Regular"),
+    url("/fonts/Carade.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}

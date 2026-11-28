@@ -1,0 +1,8 @@
+# Lo que no se sube a Cloud Build al desplegar el backend
+.venv/
+__pycache__/
+.pytest_cache/
+*.db
+*.log
+.env
+company_id.txt

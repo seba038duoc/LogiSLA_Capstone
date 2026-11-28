@@ -1,0 +1,14 @@
+# Compilación de la imagen del frontend en Google Cloud Build (la usa
+# deploy/desplegar_cloud_run.sh). La dirección del backend se pasa como
+# argumento de compilación, porque Next.js la incorpora al código del navegador.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --build-arg
+      - NEXT_PUBLIC_API_URL=${_API_URL}
+      - -t
+      - ${_IMAGEN}
+      - .
+images:
+  - ${_IMAGEN}

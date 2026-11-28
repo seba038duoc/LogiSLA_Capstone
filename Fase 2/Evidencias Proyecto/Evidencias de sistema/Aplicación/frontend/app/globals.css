@@ -25,7 +25,18 @@
   --color-brand-900: #142438;
   --color-brand-950: #0c1622;
 
-  --font-sans: "Archivo", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  /* Inter desde public/fonts (licencia libre OFL), legible en pantalla y en
+     proyector; si falta el archivo, Archivo y luego la fuente del sistema. */
+  --font-sans:
+    "Inter LogiSLA", "Inter", "Archivo LogiSLA", "Archivo", "Segoe UI", system-ui, -apple-system,
+    Roboto, Arial, sans-serif;
+
+  /* Textos pequeños un poco más grandes que los de Tailwind (12 -> 13 px y
+     14 -> 15 px), para que etiquetas, tablas y notas se lean bien proyectadas. */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.25rem;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.4rem;
 }
 
 :root {
@@ -43,6 +54,7 @@
   --cumplido: #0a7558;
   --incumplido: #b3261e;
   --transito: #9a5b00;
+  --vencida: #7a3b9c;
   --sin-regla: #6b7789;
 }
 
@@ -62,6 +74,7 @@
     --cumplido: #4ccfa3;
     --incumplido: #ff8d80;
     --transito: #f2b552;
+    --vencida: #d7a3f0;
     --sin-regla: #8e9bb0;
   }
 }
@@ -80,6 +93,7 @@
   --color-cumplido: var(--cumplido);
   --color-incumplido: var(--incumplido);
   --color-transito: var(--transito);
+  --color-vencida: var(--vencida);
   --color-sin-regla: var(--sin-regla);
 }
 
@@ -113,8 +127,8 @@ body {
   outline-offset: 2px;
 }
 
-/* Segmentos de la franja de cumplimiento. "En tránsito" va achurado y
-   "sin regla"/"pendiente" van huecos, para que la franja se entienda
+/* Segmentos de la franja de cumplimiento. "En tránsito" va achurado,
+   "datos a revisar" rayado y "sin regla"/"pendiente" van huecos, para que la franja se entienda
    también sin distinguir colores (daltonismo, impresión en B/N). */
 .seg-cumplido {
   background: var(--cumplido);
@@ -129,6 +143,13 @@ body {
     color-mix(in srgb, var(--transito) 30%, transparent) 3px 6px
   );
 }
+.seg-vencida {
+  background: var(--vencida);
+}
+.seg-invalido {
+  background: repeating-linear-gradient(45deg, var(--sin-regla) 0 1.5px, transparent 1.5px 5px);
+  box-shadow: inset 0 0 0 1px var(--sin-regla);
+}
 .seg-sin-regla {
   background: color-mix(in srgb, var(--sin-regla) 22%, transparent);
   box-shadow: inset 0 0 0 1px var(--sin-regla);
@@ -138,6 +159,31 @@ body {
   box-shadow: inset 0 0 0 1px var(--linea);
 }
 
+/* Impresión (informe de auditoría): hoja A4 con márgenes, fondo blanco y
+   colores fieles, sin importar el tema oscuro del equipo. */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 12mm;
+  }
+  :root {
+    --papel: #ffffff;
+    --superficie: #ffffff;
+    --tinta: #142438;
+    --tinta-suave: #556377;
+    --linea: #d5dce6;
+  }
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  /* El total va una sola vez, al final de la tabla (el navegador repetiría
+     el pie en cada hoja). Los encabezados sí se repiten en cada hoja. */
+  tfoot {
+    display: table-row-group;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -145,4 +191,234 @@ body {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ------------------------------------------------------------------------
+   Portada de inicio (components/Portada.tsx): carrusel con fotos y
+   accesos rápidos. El panel de texto va en azul de la marca con un borde
+   diagonal sobre la foto. Si falta la foto, queda el degradado azul.
+   ------------------------------------------------------------------------ */
+
+.portada {
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.portada-escenario {
+  position: relative;
+  height: 460px;
+  overflow: hidden;
+  background: linear-gradient(120deg, var(--color-brand-950), var(--color-brand-800));
+}
+
+.portada-diapositiva {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.7s ease,
+    visibility 0.7s;
+}
+.portada-diapositiva.es-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Foto a la derecha, con un leve acercamiento mientras está visible. */
+.portada-foto {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 62%;
+  overflow: hidden; /* el acercamiento de la foto no se sale de su recuadro */
+  background:
+    radial-gradient(circle at 70% 30%, var(--color-brand-600), transparent 60%),
+    linear-gradient(160deg, var(--color-brand-700), var(--color-brand-900));
+}
+.portada-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.06);
+  transition: transform 7s ease-out;
+}
+.es-visible .portada-foto img {
+  transform: scale(1);
+}
+
+/* Panel de texto con borde diagonal. */
+.portada-panel {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 56%;
+  display: flex;
+  align-items: center;
+  padding: 0 4.5rem 3.5rem max(1.25rem, calc((100vw - 72rem) / 2 + 1.25rem));
+  background: linear-gradient(120deg, var(--color-brand-950) 55%, var(--color-brand-900));
+  clip-path: polygon(0 0, 100% 0, 80% 100%, 0 100%);
+  will-change: transform; /* capa propia: evita una línea fantasma durante el acercamiento de la foto */
+}
+
+.portada-texto {
+  max-width: 34rem;
+  transform: translateY(14px);
+  opacity: 0;
+  transition:
+    transform 0.7s ease 0.15s,
+    opacity 0.7s ease 0.15s;
+}
+.es-visible .portada-texto {
+  transform: none;
+  opacity: 1;
+}
+
+.portada-flecha {
+  position: absolute;
+  top: calc(50% - 2rem);
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  background: #fff;
+  color: var(--color-brand-950);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.25);
+  transition: transform 0.2s;
+}
+.portada-flecha:hover {
+  transform: scale(1.08);
+}
+
+.portada-controles {
+  position: absolute;
+  bottom: 4.5rem;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem 0.35rem 0.75rem;
+  border-radius: 9999px;
+  background: rgb(12 22 34 / 0.6);
+  backdrop-filter: blur(6px);
+  transform: translateX(-50%);
+}
+.portada-punto {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.45);
+  transition:
+    width 0.3s,
+    background 0.3s;
+}
+.portada-punto.es-actual {
+  width: 1.75rem;
+  background: #fff;
+}
+
+/* Barra de accesos rápidos que se monta sobre el borde inferior del carrusel. */
+.portada-accesos {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: calc(100% - 2.5rem);
+  max-width: 69.5rem;
+  margin: -3rem auto 0;
+  overflow: hidden;
+  border: 1px solid var(--linea);
+  border-radius: 1.25rem;
+  background: var(--superficie);
+  box-shadow: 0 12px 32px rgb(12 22 34 / 0.14);
+}
+.portada-acceso {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1.15rem 1.5rem;
+  transition: background 0.2s;
+}
+.portada-acceso + .portada-acceso {
+  border-left: 1px solid var(--linea);
+}
+.portada-acceso:hover {
+  background: var(--hundido);
+}
+
+/* Celular: la foto pasa a ser el fondo, oscurecida, y el texto va encima. */
+@media (max-width: 767px) {
+  .portada-escenario {
+    height: 460px;
+  }
+  .portada-foto {
+    width: 100%;
+  }
+  .portada-foto::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgb(12 22 34 / 0.55), rgb(12 22 34 / 0.9));
+  }
+  .portada-panel {
+    width: 100%;
+    padding: 0 1.25rem 5rem;
+    background: transparent;
+    clip-path: none;
+  }
+  .portada-flecha {
+    display: none;
+  }
+  .portada-accesos {
+    grid-template-columns: 1fr;
+  }
+  .portada-acceso + .portada-acceso {
+    border-left: 0;
+    border-top: 1px solid var(--linea);
+  }
+}
+
+/* ------------------------------------------------------------------------
+   Archivo (licencia libre OFL) para el logo. Las declaraciones @font-face de
+   todas las fuentes locales están en public/fonts/fuentes.css, fuera del
+   proceso de compilación de Next.js.
+   ------------------------------------------------------------------------ */
+
+.logo-texto {
+  font-family: "Archivo LogiSLA", "Archivo", "Segoe UI", system-ui, sans-serif;
+}
+
+/* ------------------------------------------------------------------------
+   Inter (licencia libre OFL) para los textos: se define en --font-sans.
+   Reemplaza a Gill Sans MT, que en pantalla se veía pequeña y poco legible.
+   ------------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------------
+   Tipografía de la portada: títulos en Carade (Din Studio) y antetítulos en
+   Inter en mayúsculas.
+
+   Carade (frontend/public/fonts/Carade.ttf) tiene licencia de uso personal:
+   el repositorio debe ser privado. Si el archivo falta, se usa Georgia.
+   Se declara con peso 700 para que el navegador no la engrose artificialmente.
+   ------------------------------------------------------------------------ */
+
+.portada-titulo {
+  font-family: "Carade", Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  font-size: clamp(
+    2rem,
+    3.1vw,
+    3.25rem
+  ); /* 42 px en el notebook (1366), 52 px en monitores grandes */
+  line-height: 1.08;
+  letter-spacing: 0;
+  text-wrap: balance; /* reparte el título en líneas parejas */
+}
+
+.portada-antetitulo {
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }

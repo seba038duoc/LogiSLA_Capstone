@@ -1,0 +1,3 @@
+# Los scripts de shell (despliegue en Cloud Shell) siempre con saltos de línea
+# de Linux, aunque se suban desde Windows.
+*.sh text eol=lf

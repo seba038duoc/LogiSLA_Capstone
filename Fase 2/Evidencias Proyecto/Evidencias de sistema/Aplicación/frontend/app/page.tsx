@@ -4,23 +4,52 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ConEmpresa } from "@/components/EstadoEmpresa";
 import { FranjaCumplimiento } from "@/components/Franja";
-import { Aviso, BOTON_PRIMARIO, BOTON_SECUNDARIO, Cargando, EtiquetaEstadoLote } from "@/components/ui";
+import { Portada } from "@/components/Portada";
+import {
+  Aviso,
+  BOTON_PRIMARIO,
+  BOTON_SECUNDARIO,
+  Cargando,
+  EtiquetaEstadoLote,
+} from "@/components/ui";
 import { Conteos, Empresa, listarLotes, LoteResumen, mensajeDeError } from "@/lib/api";
-import { entero, fechaSistema, guias, pesos, porcentaje, porcentajeCumplimiento } from "@/lib/formato";
+import {
+  entero,
+  fechaSistema,
+  guias,
+  pesos,
+  porcentaje,
+  porcentajeCumplimiento,
+} from "@/lib/formato";
 
+/**
+ * Página de inicio (ruta /): portada con el carrusel y, debajo, el panel de
+ * lotes de la empresa activa (resumen de multas y tabla de lotes cargados).
+ */
+
+/** Página completa: portada arriba y panel de lotes abajo (ancla #lotes). */
 export default function PaginaLotes() {
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-10">
-      <ConEmpresa>{(empresa) => <PanelLotes key={empresa.id} empresa={empresa} />}</ConEmpresa>
-    </main>
+    <>
+      <Portada />
+      <main id="lotes" className="mx-auto w-full max-w-6xl flex-1 scroll-mt-4 px-5 py-10">
+        <ConEmpresa>{(empresa) => <PanelLotes key={empresa.id} empresa={empresa} />}</ConEmpresa>
+      </main>
+    </>
   );
 }
 
+/** Estados posibles del panel mientras se piden los lotes al backend. */
 type Estado =
   | { tipo: "cargando" }
   | { tipo: "error"; mensaje: string }
   | { tipo: "listo"; lotes: LoteResumen[] };
 
+/**
+ * Panel de lotes de una empresa: pide la lista al backend y muestra, según el
+ * caso, el aviso de carga, un error con botón "Reintentar", la invitación a
+ * cargar el primer archivo o el resumen con la tabla de lotes.
+ */
 function PanelLotes({ empresa }: { empresa: Empresa }) {
   const [estado, setEstado] = useState<Estado>({ tipo: "cargando" });
   const [intento, setIntento] = useState(0);
@@ -59,10 +88,12 @@ function PanelLotes({ empresa }: { empresa: Empresa }) {
   if (lotes.length === 0) {
     return (
       <section className="max-w-2xl py-6">
-        <h1 className="titular text-3xl sm:text-4xl">{empresa.nombre} todavía no tiene envíos cargados</h1>
+        <h1 className="titular text-3xl sm:text-4xl">
+          {empresa.nombre} todavía no tiene envíos cargados
+        </h1>
         <p className="mt-4 text-tinta-suave">
-          Sube la planilla de guías del período (CSV o Excel). LogiSLA compara cada entrega con el plazo
-          acordado con el transportista y calcula la multa de las que llegaron tarde.
+          Sube la planilla de guías del período (CSV o Excel). LogiSLA compara cada entrega con el
+          plazo acordado con el transportista y calcula la multa de las que llegaron tarde.
         </p>
         <Link href="/cargar" className={`${BOTON_PRIMARIO} mt-6`}>
           Cargar envíos
@@ -89,11 +120,21 @@ function PanelLotes({ empresa }: { empresa: Empresa }) {
           <table className="w-full min-w-[720px] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-linea text-tinta-suave">
-                <th scope="col" className="px-4 py-3 font-medium">Archivo</th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">Guías</th>
-                <th scope="col" className="w-[30%] px-4 py-3 font-medium">Cumplimiento</th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">Multas por reclamar</th>
-                <th scope="col" className="px-4 py-3 font-medium">Estado</th>
+                <th scope="col" className="px-4 py-3 font-medium">
+                  Archivo
+                </th>
+                <th scope="col" className="px-4 py-3 text-right font-medium">
+                  Guías
+                </th>
+                <th scope="col" className="w-[30%] px-4 py-3 font-medium">
+                  Cumplimiento
+                </th>
+                <th scope="col" className="px-4 py-3 text-right font-medium">
+                  Multas por reclamar
+                </th>
+                <th scope="col" className="px-4 py-3 font-medium">
+                  Estado
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -108,18 +149,24 @@ function PanelLotes({ empresa }: { empresa: Empresa }) {
   );
 }
 
+/** Suma los conteos de todos los lotes para el resumen de la empresa. */
 function sumar(lotes: LoteResumen[]): Conteos {
   const total: Conteos = {
-    total: 0, cumplidos: 0, incumplidos: 0, en_transito: 0, sin_regla: 0, pendientes: 0, monto_multa_total: 0,
+    total: 0,
+    cumplidos: 0,
+    incumplidos: 0,
+    en_transito: 0,
+    vencidas_sin_entrega: 0,
+    sin_regla: 0,
+    datos_invalidos: 0,
+    pendientes: 0,
+    monto_multa_total: 0,
   };
   for (const { conteos } of lotes) {
-    total.total += conteos.total;
-    total.cumplidos += conteos.cumplidos;
-    total.incumplidos += conteos.incumplidos;
-    total.en_transito += conteos.en_transito;
-    total.sin_regla += conteos.sin_regla;
-    total.pendientes += conteos.pendientes;
-    total.monto_multa_total += conteos.monto_multa_total;
+    // Se suman todos los campos numéricos de Conteos (todas las categorías y el monto).
+    for (const campo of Object.keys(total) as (keyof Conteos)[]) {
+      total[campo] += conteos[campo] ?? 0;
+    }
   }
   return total;
 }
@@ -140,32 +187,42 @@ function ResumenEmpresa({ lotes }: { lotes: LoteResumen[] }) {
   } else if (total.incumplidos === 0) {
     titular = `Las ${guias(auditadas)} auditadas llegaron en plazo`;
   } else {
-    titular = `${pesos(total.monto_multa_total)} por reclamar en ${guias(total.incumplidos)} fuera de plazo`;
+    const monto = pesos(total.monto_multa_total);
+    titular = `${monto} por reclamar en ${guias(total.incumplidos)} fuera de plazo`;
   }
+
+  const lotesSinAuditar = sinAuditar === 1 ? "Queda 1 lote" : `Quedan ${entero(sinAuditar)} lotes`;
 
   return (
     <section aria-label="Resumen de la empresa">
       <h1 className="titular cifras max-w-4xl text-3xl sm:text-5xl">{titular}</h1>
       <p className="mt-4 max-w-3xl text-tinta-suave">
-        {entero(lotes.length)} {lotes.length === 1 ? "lote cargado" : "lotes cargados"} con {guias(total.total)}.
-        {cumplimiento != null && ` Cumplimiento de SLA: ${porcentaje(cumplimiento)} de las guías auditadas.`}
-        {sinAuditar > 0 &&
-          ` ${sinAuditar === 1 ? "Queda 1 lote" : `Quedan ${entero(sinAuditar)} lotes`} sin auditar.`}
+        {entero(lotes.length)} {lotes.length === 1 ? "lote cargado" : "lotes cargados"} con{" "}
+        {guias(total.total)}.
+        {cumplimiento != null &&
+          ` Cumplimiento de SLA: ${porcentaje(cumplimiento)} de las guías auditadas.`}
+        {sinAuditar > 0 && ` ${lotesSinAuditar} sin auditar.`}
       </p>
     </section>
   );
 }
 
+/** Una fila de la tabla de lotes: archivo, guías, cumplimiento, multas y estado. */
 function FilaLote({ lote }: { lote: LoteResumen }) {
   const auditado = lote.estado === "COMPLETADO";
   const cumplimiento = porcentajeCumplimiento(lote.conteos);
   return (
     <tr className="border-b border-linea last:border-b-0 hover:bg-hundido">
       <th scope="row" className="px-4 py-3.5 text-left font-normal">
-        <Link href={`/lotes/${lote.id}`} className="font-semibold underline-offset-2 hover:underline">
+        <Link
+          href={`/lotes/${lote.id}`}
+          className="font-semibold underline-offset-2 hover:underline"
+        >
           {lote.nombre_archivo}
         </Link>
-        <div className="mt-0.5 text-xs text-tinta-suave">Cargado el {fechaSistema(lote.fecha_creacion)}</div>
+        <div className="mt-0.5 text-xs text-tinta-suave">
+          Cargado el {fechaSistema(lote.fecha_creacion)}
+        </div>
       </th>
       <td className="cifras px-4 py-3.5 text-right">{entero(lote.conteos.total)}</td>
       <td className="px-4 py-3.5">

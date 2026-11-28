@@ -16,6 +16,9 @@ backend/company_id.txt
 backend/seed_empresa.log
 backend/seed_reglas.log
 frontend/install.log
+backend/servidor.log
+backend/migracion.log
+frontend/servidor.log
 
 # --- Frontend (además de frontend/.gitignore) ---
 frontend/node_modules/

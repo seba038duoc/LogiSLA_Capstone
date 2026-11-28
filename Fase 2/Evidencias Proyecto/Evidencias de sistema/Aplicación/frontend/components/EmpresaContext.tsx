@@ -14,6 +14,7 @@ import { Empresa, listarEmpresas, mensajeDeError } from "@/lib/api";
 
 const CLAVE_GUARDADO = "logisla.empresa_id";
 
+/** Lo que entrega el contexto a cualquier componente que use useEmpresa(). */
 type ValorContexto = {
   empresas: Empresa[];
   empresa: Empresa | null;
@@ -25,6 +26,7 @@ type ValorContexto = {
 
 const ContextoEmpresa = createContext<ValorContexto | null>(null);
 
+/** Lee la empresa elegida la última vez en este navegador (localStorage). */
 function leerGuardado(): string | null {
   try {
     return window.localStorage.getItem(CLAVE_GUARDADO);
@@ -33,6 +35,7 @@ function leerGuardado(): string | null {
   }
 }
 
+/** Recuerda en este navegador la empresa elegida. */
 function guardar(id: string) {
   try {
     window.localStorage.setItem(CLAVE_GUARDADO, id);
@@ -41,6 +44,10 @@ function guardar(id: string) {
   }
 }
 
+/**
+ * Proveedor del contexto: pide la lista de empresas al backend, elige la
+ * guardada (o la primera) y comparte la empresa activa con toda la app.
+ */
 export function ProveedorEmpresa({ children }: { children: React.ReactNode }) {
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [idElegido, setIdElegido] = useState<string | null>(null);
@@ -90,12 +97,13 @@ export function ProveedorEmpresa({ children }: { children: React.ReactNode }) {
       elegirEmpresa,
       reintentar,
     }),
-    [empresas, idElegido, cargando, error, elegirEmpresa, reintentar]
+    [empresas, idElegido, cargando, error, elegirEmpresa, reintentar],
   );
 
   return <ContextoEmpresa.Provider value={valor}>{children}</ContextoEmpresa.Provider>;
 }
 
+/** Acceso a la empresa activa desde cualquier componente (debe estar dentro del proveedor). */
 export function useEmpresa(): ValorContexto {
   const valor = useContext(ContextoEmpresa);
   if (!valor) throw new Error("useEmpresa debe usarse dentro de <ProveedorEmpresa>");

@@ -1,0 +1,6 @@
+# Lo que NO entra a la imagen del frontend
+node_modules/
+.next/
+.env.local
+*.log
+pruebas/

@@ -7,6 +7,7 @@ GET /api/v1/empresas
     las empresas. Cuando haya autenticación, este endpoint debe devolver
     solo la(s) empresa(s) del usuario autenticado.
 """
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -19,4 +20,5 @@ router = APIRouter(prefix="/api/v1/empresas", tags=["empresas"])
 
 @router.get("", response_model=list[EmpresaSalida])
 def listar_empresas(db: Session = Depends(obtener_bd)):
+    """GET /api/v1/empresas: empresas registradas."""
     return db.query(Empresa).order_by(Empresa.nombre).all()

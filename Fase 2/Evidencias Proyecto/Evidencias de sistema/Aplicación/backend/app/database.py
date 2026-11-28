@@ -4,6 +4,7 @@ Configuración de SQLAlchemy: motor, sesión y Base declarativa.
 obtener_bd() se usa como dependencia de FastAPI para inyectar una sesión
 por request y garantizar que siempre se cierre, incluso si la request falla.
 """
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
@@ -23,6 +24,10 @@ Base = declarative_base()
 
 
 def obtener_bd():
+    """Entrega una sesión de base de datos por petición y la cierra al terminar.
+
+    Se usa como dependencia de FastAPI (Depends(obtener_bd)).
+    """
     db = SesionLocal()
     try:
         yield db

@@ -6,6 +6,7 @@ Reutiliza el flujo real de ingesta (/cargar) para armar el lote, en vez
 de insertar Envio a mano, así se prueba el camino completo tal como lo
 recorre un archivo real subido por el usuario.
 """
+
 import pandas as pd
 
 from app.models import Transportista, ReglaSLA
@@ -19,15 +20,24 @@ def test_auditar_calcula_incumplimientos_y_multas(cliente, sesion_bd, empresa_ej
     transportista = Transportista(nombre="Chilexpress")
     sesion_bd.add(transportista)
     sesion_bd.flush()
-    sesion_bd.add(ReglaSLA(transportista_id=transportista.id, horas_habiles_maximas=24, multa_por_incumplimiento=15000, activa=True))
+    sesion_bd.add(
+        ReglaSLA(
+            transportista_id=transportista.id,
+            horas_habiles_maximas=24,
+            multa_por_incumplimiento=15000,
+            activa=True,
+        )
+    )
     sesion_bd.commit()
 
-    df = pd.DataFrame({
-        "N° Guía": ["G-001", "G-002"],
-        "Transportista": ["Chilexpress", "Chilexpress"],
-        "Fecha Despacho": ["2025-11-10 09:00", "2025-11-10 09:00"],
-        "Fecha Entrega": ["2025-11-10 14:00", "2025-11-12 18:00"],
-    })
+    df = pd.DataFrame(
+        {
+            "N° Guía": ["G-001", "G-002"],
+            "Transportista": ["Chilexpress", "Chilexpress"],
+            "Fecha Despacho": ["2025-11-10 09:00", "2025-11-10 09:00"],
+            "Fecha Entrega": ["2025-11-10 14:00", "2025-11-12 18:00"],
+        }
+    )
     carga = cliente.post(
         f"/api/v1/lotes-auditoria/cargar?empresa_id={empresa_ejemplo.id}",
         files={"file": ("envios.csv", _bytes_csv(df), "text/csv")},
@@ -52,12 +62,14 @@ def test_auditar_calcula_incumplimientos_y_multas(cliente, sesion_bd, empresa_ej
 
 
 def test_auditar_reporta_envios_sin_regla_sla_que_matchee(cliente, empresa_ejemplo):
-    df = pd.DataFrame({
-        "N° Guía": ["G-010"],
-        "Transportista": ["Transportista Sin Regla"],
-        "Fecha Despacho": ["2025-11-10 09:00"],
-        "Fecha Entrega": ["2025-11-10 14:00"],
-    })
+    df = pd.DataFrame(
+        {
+            "N° Guía": ["G-010"],
+            "Transportista": ["Transportista Sin Regla"],
+            "Fecha Despacho": ["2025-11-10 09:00"],
+            "Fecha Entrega": ["2025-11-10 14:00"],
+        }
+    )
     carga = cliente.post(
         f"/api/v1/lotes-auditoria/cargar?empresa_id={empresa_ejemplo.id}",
         files={"file": ("envios.csv", _bytes_csv(df), "text/csv")},

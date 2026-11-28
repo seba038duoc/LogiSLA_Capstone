@@ -11,6 +11,7 @@ Es una función pura (no toca la BD ni el archivo) para que sea fácil de
 testear con muchos casos de headers reales sin necesitar pandas ni un
 archivo físico.
 """
+
 import re
 from dataclasses import dataclass, field
 
@@ -27,28 +28,54 @@ CAMPOS_OPCIONALES = ["fecha_entrega", "destino", "valor_declarado"]
 # estos strings NO se traducen: son datos, no identificadores del código.
 SINONIMOS = {
     "numero_guia": [
-        "guia", "nguia", "numeroguia", "nrodeguia", "tracking",
-        "trackingnumber", "numeroenvio", "nenvio", "codigoenvio", "guide",
-        "waybill", "ordennumero",
+        "guia",
+        "nguia",
+        "numeroguia",
+        "nrodeguia",
+        "tracking",
+        "trackingnumber",
+        "numeroenvio",
+        "nenvio",
+        "codigoenvio",
+        "guide",
+        "waybill",
+        "ordennumero",
     ],
     "nombre_transportista": [
-        "transportista", "carrier", "courier", "empresadetransporte",
-        "operadorlogistico", "operador",
+        "transportista",
+        "carrier",
+        "courier",
+        "empresadetransporte",
+        "operadorlogistico",
+        "operador",
     ],
     "fecha_despacho": [
-        "fechadespacho", "fechaenvio", "fechasalida", "dispatchdate",
-        "shipdate", "fecharetiro",
+        "fechadespacho",
+        "fechaenvio",
+        "fechasalida",
+        "dispatchdate",
+        "shipdate",
+        "fecharetiro",
     ],
     "fecha_entrega": [
-        "fechaentrega", "deliverydate", "fecharecepcion", "fecharecibido",
+        "fechaentrega",
+        "deliverydate",
+        "fecharecepcion",
+        "fecharecibido",
         "fechacierre",
     ],
     "destino": [
-        "destino", "destination", "ciudaddestino", "comunadestino",
+        "destino",
+        "destination",
+        "ciudaddestino",
+        "comunadestino",
         "direcciondestino",
     ],
     "valor_declarado": [
-        "valordeclarado", "declaredvalue", "montoenvio", "valorenvio",
+        "valordeclarado",
+        "declaredvalue",
+        "montoenvio",
+        "valorenvio",
         "montodeclarado",
     ],
 }
@@ -76,9 +103,14 @@ def _normalizar(header: str) -> str:
 
 @dataclass
 class ResultadoMapeo:
-    mapeo: dict = field(default_factory=dict)                # {campo_interno: header_original}
+    """Resultado del reconocimiento de columnas.
+
+    Incluye el mapeo encontrado, las columnas obligatorias faltantes y las ambiguas.
+    """
+
+    mapeo: dict = field(default_factory=dict)  # {campo_interno: header_original}
     obligatorios_sin_mapear: list = field(default_factory=list)  # campos obligatorios sin match
-    ambiguos: dict = field(default_factory=dict)              # campo: [headers candidatos] si hubo >1 match
+    ambiguos: dict = field(default_factory=dict)  # campo: [headers candidatos] si hubo >1 match
 
     @property
     def es_valido(self) -> bool:

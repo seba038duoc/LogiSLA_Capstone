@@ -5,6 +5,7 @@ Cubrimos casos reales de headers variados, no solo el caso feliz, porque
 el objetivo es que LogiSLA acepte archivos de distintas empresas sin que
 cada una tenga que adaptarse a un formato fijo.
 """
+
 from app.column_mapping import mapear_columnas, CAMPOS_OBLIGATORIOS
 
 

@@ -4,8 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Aviso, BOTON_PRIMARIO, BOTON_SECUNDARIO, Spinner } from "@/components/ui";
-import { auditarLote, cargarLoteAuditoria, Empresa, mensajeDeError, RespuestaCarga } from "@/lib/api";
+import {
+  auditarLote,
+  cargarLoteAuditoria,
+  Empresa,
+  mensajeDeError,
+  RespuestaCarga,
+} from "@/lib/api";
 import { guias } from "@/lib/formato";
+import { clases } from "@/lib/clases";
 
 /**
  * Carga de envíos:
@@ -20,27 +27,61 @@ import { guias } from "@/lib/formato";
  * subir.
  */
 
+/** Tipos de archivo aceptados. */
 const EXTENSIONES = [".csv", ".xlsx", ".xls"];
 
 /** Nombre legible de cada campo interno + ejemplos de encabezados válidos. */
 const CAMPOS: { clave: string; nombre: string; obligatorio: boolean; ejemplos: string }[] = [
-  { clave: "numero_guia", nombre: "N° de guía", obligatorio: true, ejemplos: "N° Guía, Tracking, Código Envío" },
-  { clave: "nombre_transportista", nombre: "Transportista", obligatorio: true, ejemplos: "Transportista, Courier, Operador" },
-  { clave: "fecha_despacho", nombre: "Fecha de despacho", obligatorio: true, ejemplos: "Fecha Despacho, Fecha Envío, Fecha Salida" },
-  { clave: "fecha_entrega", nombre: "Fecha de entrega", obligatorio: false, ejemplos: "Fecha Entrega, Fecha Recepción" },
-  { clave: "destino", nombre: "Destino", obligatorio: false, ejemplos: "Destino, Comuna Destino, Ciudad Destino" },
-  { clave: "valor_declarado", nombre: "Valor declarado", obligatorio: false, ejemplos: "Valor Declarado, Monto Envío" },
+  {
+    clave: "numero_guia",
+    nombre: "N° de guía",
+    obligatorio: true,
+    ejemplos: "N° Guía, Tracking, Código Envío",
+  },
+  {
+    clave: "nombre_transportista",
+    nombre: "Transportista",
+    obligatorio: true,
+    ejemplos: "Transportista, Courier, Operador",
+  },
+  {
+    clave: "fecha_despacho",
+    nombre: "Fecha de despacho",
+    obligatorio: true,
+    ejemplos: "Fecha Despacho, Fecha Envío, Fecha Salida",
+  },
+  {
+    clave: "fecha_entrega",
+    nombre: "Fecha de entrega",
+    obligatorio: false,
+    ejemplos: "Fecha Entrega, Fecha Recepción",
+  },
+  {
+    clave: "destino",
+    nombre: "Destino",
+    obligatorio: false,
+    ejemplos: "Destino, Comuna Destino, Ciudad Destino",
+  },
+  {
+    clave: "valor_declarado",
+    nombre: "Valor declarado",
+    obligatorio: false,
+    ejemplos: "Valor Declarado, Monto Envío",
+  },
 ];
 
+/** Pasos del flujo de carga: eligiendo archivo, subiendo y cargado (listo para auditar). */
 type Paso =
   | { tipo: "eligiendo"; error?: string }
   | { tipo: "subiendo" }
   | { tipo: "cargado"; resultado: RespuestaCarga; auditando: boolean; error?: string };
 
+/** Revisa por la extensión que el archivo sea CSV o Excel antes de subirlo. */
 function extensionValida(nombre: string): boolean {
   return EXTENSIONES.some((ext) => nombre.toLowerCase().endsWith(ext));
 }
 
+/** Componente principal de la carga de envíos para la empresa indicada. */
 export default function UploadFlow({ empresa }: { empresa: Empresa }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -95,18 +136,25 @@ export default function UploadFlow({ empresa }: { empresa: Empresa }) {
     const ambiguas = Object.entries(resultado.advertencias_ambiguas ?? {});
     return (
       <div className="max-w-3xl">
-        <h1 className="titular text-3xl sm:text-4xl">{guias(resultado.total_filas)} cargadas, listas para auditar</h1>
+        <h1 className="titular text-3xl sm:text-4xl">
+          {guias(resultado.total_filas)} cargadas, listas para auditar
+        </h1>
         <p className="mt-3 text-tinta-suave">
-          Archivo <span className="font-medium text-tinta">{resultado.nombre_archivo}</span>, empresa{" "}
-          {empresa.nombre}. Revisa que cada dato se haya leído de la columna correcta antes de auditar.
+          Archivo <span className="font-medium text-tinta">{resultado.nombre_archivo}</span>,
+          empresa {empresa.nombre}. Revisa que cada dato se haya leído de la columna correcta antes
+          de auditar.
         </p>
 
         <div className="mt-6 overflow-x-auto rounded-lg border border-linea bg-superficie">
           <table className="w-full border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-linea text-tinta-suave">
-                <th scope="col" className="px-4 py-3 font-medium">Dato</th>
-                <th scope="col" className="px-4 py-3 font-medium">Columna de tu archivo</th>
+                <th scope="col" className="px-4 py-3 font-medium">
+                  Dato
+                </th>
+                <th scope="col" className="px-4 py-3 font-medium">
+                  Columna de tu archivo
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -114,7 +162,9 @@ export default function UploadFlow({ empresa }: { empresa: Empresa }) {
                 const columna = resultado.mapeo_columnas?.[campo.clave];
                 return (
                   <tr key={campo.clave} className="border-b border-linea last:border-b-0">
-                    <th scope="row" className="px-4 py-2.5 font-medium">{campo.nombre}</th>
+                    <th scope="row" className="px-4 py-2.5 font-medium">
+                      {campo.nombre}
+                    </th>
                     <td className={`px-4 py-2.5 ${columna ? "" : "text-tinta-suave"}`}>
                       {columna ?? "No viene en el archivo (opcional)"}
                     </td>
@@ -129,8 +179,9 @@ export default function UploadFlow({ empresa }: { empresa: Empresa }) {
           <div className="mt-4">
             <Aviso tipo="aviso" titulo="El archivo no trae fecha de entrega">
               <p>
-                Sin fecha de entrega no se puede calcular el atraso: todas las guías quedarán como
-                “en tránsito”.
+                Sin fecha de entrega no se puede saber si las encomiendas llegaron ni calcular el
+                atraso: cada guía quedará “en tránsito” o, si su plazo ya venció, “vencida sin
+                entrega” (sin multa).
               </p>
             </Aviso>
           </div>
@@ -140,12 +191,14 @@ export default function UploadFlow({ empresa }: { empresa: Empresa }) {
           <div className="mt-4">
             <Aviso tipo="aviso" titulo="Hay columnas que se parecen entre sí">
               <ul className="list-disc space-y-1 pl-5">
-                {ambiguas.map(([campo, columnas]) => (
-                  <li key={campo}>
-                    {CAMPOS.find((c) => c.clave === campo)?.nombre ?? campo}: también podrían ser{" "}
-                    {columnas.join(", ")}.
-                  </li>
-                ))}
+                {ambiguas.map(([campo, columnas]) => {
+                  const nombre = CAMPOS.find((c) => c.clave === campo)?.nombre ?? campo;
+                  return (
+                    <li key={campo}>
+                      {nombre}: también podrían ser {columnas.join(", ")}.
+                    </li>
+                  );
+                })}
               </ul>
             </Aviso>
           </div>
@@ -160,7 +213,11 @@ export default function UploadFlow({ empresa }: { empresa: Empresa }) {
         )}
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <button onClick={() => auditar(resultado)} disabled={paso.auditando} className={BOTON_PRIMARIO}>
+          <button
+            onClick={() => auditar(resultado)}
+            disabled={paso.auditando}
+            className={BOTON_PRIMARIO}
+          >
             {paso.auditando && <Spinner />}
             {paso.auditando ? "Auditando…" : "Auditar lote"}
           </button>
@@ -200,9 +257,10 @@ export default function UploadFlow({ empresa }: { empresa: Empresa }) {
             setArrastrando(false);
             if (!subiendo) elegirArchivo(e.dataTransfer.files?.[0]);
           }}
-          className={`mt-6 rounded-lg border-2 border-dashed px-5 py-10 text-center transition-colors ${
-            arrastrando ? "border-foco bg-foco/8" : "border-linea bg-superficie"
-          }`}
+          className={clases(
+            "mt-6 rounded-lg border-2 border-dashed px-5 py-10 text-center transition-colors",
+            arrastrando ? "border-foco bg-foco/8" : "border-linea bg-superficie",
+          )}
         >
           {archivo ? (
             <>
@@ -231,7 +289,13 @@ export default function UploadFlow({ empresa }: { empresa: Empresa }) {
           />
           <label
             htmlFor="archivo-envios"
-            className={`${BOTON_SECUNDARIO} mt-4 ${subiendo ? "pointer-events-none opacity-60" : "cursor-pointer"} peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-foco`}
+            className={clases(
+              BOTON_SECUNDARIO,
+              "mt-4",
+              subiendo ? "pointer-events-none opacity-60" : "cursor-pointer",
+              "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2",
+              "peer-focus-visible:outline-foco",
+            )}
           >
             {archivo ? "Elegir otro archivo" : "Elegir archivo"}
           </label>
@@ -245,7 +309,11 @@ export default function UploadFlow({ empresa }: { empresa: Empresa }) {
           </div>
         )}
 
-        <button onClick={subir} disabled={!archivo || subiendo} className={`${BOTON_PRIMARIO} mt-6`}>
+        <button
+          onClick={subir}
+          disabled={!archivo || subiendo}
+          className={`${BOTON_PRIMARIO} mt-6`}
+        >
           {subiendo && <Spinner />}
           {subiendo ? "Cargando envíos…" : "Cargar envíos"}
         </button>
@@ -263,7 +331,9 @@ export default function UploadFlow({ empresa }: { empresa: Empresa }) {
             <div key={campo.clave} className="py-2.5">
               <dt className="font-medium">
                 {campo.nombre}
-                {!campo.obligatorio && <span className="font-normal text-tinta-suave"> (opcional)</span>}
+                {!campo.obligatorio && (
+                  <span className="font-normal text-tinta-suave"> (opcional)</span>
+                )}
               </dt>
               <dd className="text-tinta-suave">{campo.ejemplos}</dd>
             </div>

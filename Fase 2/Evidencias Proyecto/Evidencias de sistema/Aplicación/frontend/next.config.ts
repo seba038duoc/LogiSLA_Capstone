@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Oculta el botón flotante de desarrollo de Next.js en la esquina de la pantalla.
+  devIndicators: false,
 };
 
 export default nextConfig;

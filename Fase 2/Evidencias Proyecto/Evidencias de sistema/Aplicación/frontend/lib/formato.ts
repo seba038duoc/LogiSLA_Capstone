@@ -9,7 +9,11 @@ const fmtPesos = new Intl.NumberFormat("es-CL", {
 });
 const fmtEntero = new Intl.NumberFormat("es-CL");
 const fmtHoras = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1 });
-const fmtFecha = new Intl.DateTimeFormat("es-CL", { day: "2-digit", month: "short", year: "numeric" });
+const fmtFecha = new Intl.DateTimeFormat("es-CL", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
 const fmtFechaHora = new Intl.DateTimeFormat("es-CL", {
   day: "2-digit",
   month: "short",
@@ -18,19 +22,22 @@ const fmtFechaHora = new Intl.DateTimeFormat("es-CL", {
   minute: "2-digit",
 });
 
+/** Monto en pesos chilenos: 15000 -> "$15.000". */
 export function pesos(monto: number | null | undefined): string {
   return monto == null ? "" : fmtPesos.format(monto);
 }
 
+/** Número entero con separador de miles: 1500 -> "1.500". */
 export function entero(n: number): string {
   return fmtEntero.format(n);
 }
 
+/** Horas con un decimal: 10.5 -> "10,5 h". */
 export function horas(n: number | null | undefined): string {
   return n == null ? "" : `${fmtHoras.format(n)} h`;
 }
 
-/** "1 guía" / "60 guías" */
+/** Cantidad de guías en singular o plural: "1 guía", "13 guías". */
 export function guias(n: number): string {
   return `${entero(n)} ${n === 1 ? "guía" : "guías"}`;
 }
@@ -46,6 +53,21 @@ export function fechaHoraLocal(iso: string | null | undefined): string {
 }
 
 /**
+ * Versión compacta de fechaHoraLocal para tablas: "18-09-2026 16:30"
+ * (día-mes-año y hora de 24 horas, el mismo formato de la justificación).
+ */
+export function fechaHoraCorta(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const fecha = new Date(iso);
+  if (Number.isNaN(fecha.getTime())) return iso;
+  const dos = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${dos(fecha.getDate())}-${dos(fecha.getMonth() + 1)}-${fecha.getFullYear()} ` +
+    `${dos(fecha.getHours())}:${dos(fecha.getMinutes())}`
+  );
+}
+
+/**
  * Fechas que genera el sistema (creación del lote, auditoría): el backend
  * las guarda en UTC. Con SQLite llegan sin sufijo de zona, y el navegador
  * las tomaría como hora local (quedarían corridas 3-4 horas), así que si
@@ -56,6 +78,7 @@ function comoUtc(iso: string): Date {
   return new Date(tieneZona ? iso : `${iso}Z`);
 }
 
+/** Fecha (y hora, opcional) de un registro del sistema, en hora de Chile. */
 export function fechaSistema(iso: string | null | undefined, conHora = true): string {
   if (!iso) return "";
   const fecha = comoUtc(iso);
@@ -72,6 +95,7 @@ export function porcentajeCumplimiento(c: Conteos): number | null {
   return auditadas === 0 ? null : (c.cumplidos / auditadas) * 100;
 }
 
+/** Porcentaje sin decimales, salvo entre 99 y 100 ("99,6 %" en vez de redondear a 100). */
 export function porcentaje(valor: number | null): string {
   if (valor == null) return "";
   // 99,6 % no debe redondearse a "100 %" si hubo incumplimientos

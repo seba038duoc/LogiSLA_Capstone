@@ -1,23 +1,17 @@
 @echo off
 setlocal
+title LogiSLA
 cd /d "%~dp0"
-if not exist "%~dp0backend\requirements.txt" (
-    echo [ERROR] No se encontro la carpeta backend junto a este script.
-    echo Ejecuta iniciar.bat desde la carpeta LogiSLA del proyecto.
-    echo.
+
+REM Unico punto de entrada: doble clic aqui. Busca un Python estable y le
+REM entrega el resto a iniciar.py (instalacion, puertos, backend, frontend y
+REM navegador), que deja todo corriendo en ESTA misma ventana.
+
+if not exist "%~dp0iniciar.py" (
+    echo [ERROR] Falta iniciar.py junto a este archivo.
     pause
     exit /b 1
 )
-set "TRACE=%~dp0debug_trace.txt"
-echo ===== nueva corrida %DATE% %TIME% ===== > "%TRACE%"
-
-echo ============================================
-echo   LogiSLA - levantando backend + frontend
-echo ============================================
-echo.
-echo Requisitos: Python 3.10 a 3.14 (version estable) y Node.js 20.9 o superior instalados en Windows,
-echo con la casilla "Add to PATH" marcada durante la instalacion.
-echo.
 
 REM --- Elegir un Python ESTABLE (3.10 a 3.14) ---
 REM Con versiones alfa/beta (por ejemplo 3.15.0a3) pandas y pydantic no
@@ -40,168 +34,15 @@ python --version 2>nul
 echo.
 echo Instala Python 3.13 desde https://www.python.org/downloads/
 echo ^(marca "Add python.exe to PATH"^) y vuelve a ejecutar iniciar.bat.
-echo Las versiones alfa o beta ^(como 3.15.0a3^) NO sirven.
 echo.
 pause
 exit /b 1
 
 :py_listo
-echo Usando: %PY_CMD%
-%PY_CMD% --version
-echo.
-
-where node >nul 2>nul
+%PY_CMD% "%~dp0iniciar.py" %*
 if errorlevel 1 (
-    echo [ERROR] No se encontro "node" en el PATH de Windows.
-    echo Instalalo desde https://nodejs.org/ ^(version LTS^).
     echo.
+    echo LogiSLA no pudo arrancar. El motivo aparece arriba.
     pause
     exit /b 1
 )
-
-where npm >nul 2>nul
-if errorlevel 1 (
-    echo [ERROR] No se encontro "npm" en el PATH de Windows ^(viene con Node.js^).
-    echo Reinstala Node.js desde https://nodejs.org/ ^(version LTS^).
-    echo.
-    pause
-    exit /b 1
-)
-
-set "NODE_MAJOR="
-for /f "tokens=1 delims=v." %%M in ('node --version') do set "NODE_MAJOR=%%M"
-if not defined NODE_MAJOR set "NODE_MAJOR=0"
-if %NODE_MAJOR% LSS 20 (
-    echo [ERROR] El frontend usa Next.js 16, que necesita Node.js 20.9 o superior.
-    echo Version instalada:
-    node --version
-    echo Instala la version LTS desde https://nodejs.org/ y vuelve a ejecutar iniciar.bat.
-    echo.
-    pause
-    exit /b 1
-)
-
-echo TRACE: checks de python/node/npm OK >> "%TRACE%"
-
-REM --- Backend ---
-cd /d "%~dp0backend"
-echo TRACE: entre a backend >> "%TRACE%"
-
-REM Si ya existe un .venv creado con una version no soportada, se rehace.
-if not exist .venv\Scripts\python.exe goto crear_venv
-.venv\Scripts\python.exe -c "import sys; v=sys.version_info; sys.exit(0 if v.releaselevel=='final' and (3,10)<=v[:2]<=(3,14) else 1)" >nul 2>nul
-if not errorlevel 1 goto venv_listo
-echo El entorno virtual existente usa una version de Python no soportada. Se vuelve a crear...
-rmdir /s /q .venv
-
-:crear_venv
-echo Creando entorno virtual de Python...
-%PY_CMD% -m venv .venv
-
-:venv_listo
-
-if not exist .venv\Scripts\python.exe (
-    echo [ERROR] No se pudo crear el entorno virtual ^(.venv^).
-    echo Revisa que Python este bien instalado y vuelve a intentar.
-    echo.
-    pause
-    exit /b 1
-)
-
-set "VENV_PY=%~dp0backend\.venv\Scripts\python.exe"
-
-echo Instalando dependencias del backend (puede tardar un par de minutos la primera vez)...
-echo Si algo falla, el detalle queda guardado en backend\install.log
-"%VENV_PY%" -m pip install -r requirements.txt > install.log 2>&1
-if errorlevel 1 (
-    echo [ERROR] Fallo la instalacion de dependencias del backend.
-    echo Abre el archivo backend\install.log para ver el detalle,
-    echo El final de ese archivo indica que dependencia fallo y por que.
-    echo.
-    pause
-    exit /b 1
-)
-echo Listo.
-echo TRACE: pip install OK >> "%TRACE%"
-
-set DATABASE_URL=sqlite:///./logisla.db
-set "PYTHONPATH=%~dp0backend"
-
-REM Empresa de prueba (idempotente: si ya existe, no se duplica). El script
-REM crea las tablas si la base de datos esta vacia.
-echo Preparando empresa de prueba...
-"%VENV_PY%" scripts\seed_pilot_company.py "Retail Piloto SpA" "76.987.654-3" > company_id.txt 2> seed_empresa.log
-if errorlevel 1 (
-    echo [ATENCION] No se pudo crear la empresa de prueba. Detalle en backend\seed_empresa.log
-    echo.
-)
-echo TRACE: company_id OK >> "%TRACE%"
-
-REM Reglas SLA de los transportistas (idempotente). Sin esto el motor de
-REM auditoria no tiene plazos contra los cuales comparar y todas las
-REM guias quedan como "sin regla SLA".
-echo Cargando transportistas y reglas SLA de prueba...
-"%VENV_PY%" scripts\seed_carriers_and_rules.py > seed_reglas.log 2>&1
-if errorlevel 1 (
-    echo [ATENCION] No se pudieron cargar las reglas SLA. Detalle en backend\seed_reglas.log
-    echo.
-)
-echo TRACE: reglas SLA OK >> "%TRACE%"
-
-echo Levantando el backend en una ventana nueva (puerto 8000)...
-echo TRACE: por lanzar backend >> "%TRACE%"
-start "LogiSLA - Backend" cmd /k ""%~dp0backend\_run_backend.bat""
-echo TRACE: backend lanzado >> "%TRACE%"
-
-cd /d "%~dp0"
-echo TRACE: volvi a la raiz >> "%TRACE%"
-
-REM --- Frontend ---
-cd /d "%~dp0frontend"
-echo TRACE: entre a frontend >> "%TRACE%"
-
-if not exist node_modules (
-    echo TRACE: node_modules no existe, voy a instalar >> "%TRACE%"
-    echo Instalando dependencias del frontend (puede tardar unos minutos la primera vez)...
-    echo Si algo falla, el detalle queda guardado en frontend\install.log
-    call npm install > install.log 2>&1
-    echo TRACE: npm install termino con errorlevel %errorlevel% >> "%TRACE%"
-    if errorlevel 1 (
-        echo [ERROR] Fallo "npm install".
-        echo Abre el archivo frontend\install.log para ver el detalle,
-        echo El final de ese archivo indica que dependencia fallo y por que.
-        echo.
-        pause
-        exit /b 1
-    )
-    echo Listo.
-)
-if not exist .env.local (
-    copy .env.local.example .env.local >nul
-)
-echo TRACE: por lanzar frontend >> "%TRACE%"
-
-echo Levantando el frontend en una ventana nueva (puerto 3000)...
-start "LogiSLA - Frontend" cmd /k ""%~dp0frontend\_run_frontend.bat""
-echo TRACE: frontend lanzado >> "%TRACE%"
-
-cd /d "%~dp0"
-
-echo.
-echo Esperando a que ambos servidores arranquen...
-timeout /t 12 /nobreak >nul
-
-echo Abriendo el navegador...
-start http://localhost:3000
-
-echo.
-echo ============================================
-echo   LogiSLA esta listo en http://localhost:3000
-echo   La empresa de prueba ya aparece elegida en la pagina.
-echo ============================================
-echo.
-echo Quedaron dos ventanas nuevas abiertas (Backend y Frontend) - no las cierres
-echo mientras uses la pagina. Cuando termines, simplemente cierralas.
-echo.
-echo TRACE: fin del script, esperando pause >> "%TRACE%"
-pause

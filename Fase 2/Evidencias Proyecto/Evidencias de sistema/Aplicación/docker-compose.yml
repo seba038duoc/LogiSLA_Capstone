@@ -1,0 +1,53 @@
+# LogiSLA completo en contenedores (HU-20): PostgreSQL 16, backend y frontend.
+#
+# Requiere Docker Desktop. Desde esta carpeta (Aplicacion):
+#   docker compose up --build        (la primera vez tarda unos minutos)
+# Luego abrir http://localhost:3000. Para detener: Ctrl+C o "docker compose down".
+# Para borrar también los datos de la base: docker compose down -v
+#
+# Las claves de la IA se leen de backend/.env (si existe); nunca van dentro de
+# las imágenes. El uso diario sigue siendo iniciar.bat: esto es la alternativa
+# en contenedores y la base para el despliegue en Google Cloud Run.
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: logisla
+      POSTGRES_PASSWORD: logisla
+      POSTGRES_DB: logisla
+    volumes:
+      - logisla_datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logisla"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build: ./backend
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg2://logisla:logisla@db:5432/logisla
+      ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      CARGAR_DATOS_PRUEBA: "1"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  logisla_datos:

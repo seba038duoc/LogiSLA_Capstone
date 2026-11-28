@@ -1,0 +1,13 @@
+Fotos del carrusel de la portada (components/Portada.tsx)
+
+  portada-1.jpg  equipo de bodega revisando envíos en un notebook
+  portada-2.jpg  supervisora con casco revisando indicadores (invertida en espejo)
+  portada-3.jpg  encargada de logística escribiendo en su notebook; atrás, un compañero revisa cajas
+
+Origen: Pexels (https://www.pexels.com), licencia Pexels: uso gratuito,
+se permite modificar. Redimensionadas y comprimidas para la web.
+
+Enlaces de cada foto (completar para el informe):
+  portada-1.jpg:
+  portada-2.jpg:
+  portada-3.jpg:

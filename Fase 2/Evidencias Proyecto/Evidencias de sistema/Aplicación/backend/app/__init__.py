@@ -1,0 +1,1 @@
+"""Paquete app de LogiSLA."""

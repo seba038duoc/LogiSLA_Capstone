@@ -1,0 +1,13 @@
+{
+  "name": "logisla-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pruebas de punta a punta (E2E) de LogiSLA con Playwright",
+  "scripts": {
+    "test": "playwright test",
+    "reporte": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

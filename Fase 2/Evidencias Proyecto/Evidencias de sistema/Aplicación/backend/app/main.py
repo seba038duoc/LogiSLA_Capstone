@@ -1,4 +1,5 @@
 """Punto de entrada de la API LogiSLA."""
+
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -7,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, motor
-from app.routers import audit_batches, empresas
+from app.routers import audit_batches, empresas, ia
 
 registrador = logging.getLogger(__name__)
 
@@ -35,20 +36,22 @@ app = FastAPI(
     lifespan=ciclo_vida,
 )
 
-# El frontend (Next.js) corre en otro origen (localhost:3000 en dev, otro
-# dominio en Cloud Run en el Sprint 5), así que el navegador
-# necesita estos headers CORS o bloquea las llamadas fetch(). En dev
-# dejamos localhost:3000/3001 fijos; ALLOWED_ORIGINS permite agregar el
-# dominio real de producción sin tocar código.
+# El frontend (Next.js) corre en otro origen (localhost:3000 en desarrollo,
+# otro dominio en la nube), así que el navegador necesita estos headers CORS
+# o bloquea las llamadas fetch(). En desarrollo quedan localhost:3000/3001;
+# ALLOWED_ORIGINS agrega dominios exactos y ALLOWED_ORIGIN_REGEX un patrón
+# (por ejemplo, el dominio que Render asigna al frontend), sin tocar código.
 origenes_por_defecto = (
-    "http://localhost:3000,http://127.0.0.1:3000,"
-    "http://localhost:3001,http://127.0.0.1:3001"
+    "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001"
 )
-origenes_permitidos = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", origenes_por_defecto).split(",") if o.strip()]
+origenes_permitidos = [
+    o.strip() for o in os.getenv("ALLOWED_ORIGINS", origenes_por_defecto).split(",") if o.strip()
+]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origenes_permitidos,
+    allow_origin_regex=os.getenv("ALLOWED_ORIGIN_REGEX") or None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,8 +59,10 @@ app.add_middleware(
 
 app.include_router(audit_batches.router)
 app.include_router(empresas.router)
+app.include_router(ia.router)
 
 
 @app.get("/health")
 def verificar_salud():
+    """GET /health: permite comprobar que el backend está encendido."""
     return {"status": "ok"}

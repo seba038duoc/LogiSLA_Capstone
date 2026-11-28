@@ -8,17 +8,24 @@
  *   archivo subido por un tercero).
  */
 
-type Celda = string | number;
+export type Celda = string | number;
 
-function escapar(celda: Celda): string {
+/** Prepara una celda: coma decimal en números, protección contra fórmulas y comillas. */
+export function escapar(celda: Celda): string {
   if (typeof celda === "number") return String(celda).replace(".", ",");
   let texto = celda;
   if (/^[=+\-@\t\r]/.test(texto)) texto = `'${texto}`;
   return /[";\r\n]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto;
 }
 
+/** Contenido del CSV: BOM UTF-8, celdas separadas por ";" y filas por salto de línea de Windows. */
+export function armarCsv(filas: Celda[][]): string {
+  return "\uFEFF" + filas.map((fila) => fila.map(escapar).join(";")).join("\r\n");
+}
+
+/** Arma el CSV con las filas indicadas y lo descarga en el navegador. */
 export function descargarCsv(nombreArchivo: string, filas: Celda[][]): void {
-  const contenido = "\uFEFF" + filas.map((fila) => fila.map(escapar).join(";")).join("\r\n");
+  const contenido = armarCsv(filas);
   const url = URL.createObjectURL(new Blob([contenido], { type: "text/csv;charset=utf-8" }));
   const enlace = document.createElement("a");
   enlace.href = url;

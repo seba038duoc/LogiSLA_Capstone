@@ -22,11 +22,12 @@ export function LogoMark({ className = "h-7 w-7" }: { className?: string }) {
   );
 }
 
+/** Logo completo: la marca "L" más la palabra LogiSLA ("Logi" medio, "SLA" extra grueso). */
 export function LogoWordmark({ className = "" }: { className?: string }) {
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
       <LogoMark />
-      <span className="text-lg tracking-tight" style={{ fontStretch: "112%" }}>
+      <span className="logo-texto text-lg tracking-tight" style={{ fontStretch: "112%" }}>
         <span className="font-medium">Logi</span>
         <span className="font-extrabold">SLA</span>
       </span>

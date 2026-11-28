@@ -8,11 +8,17 @@ Uso:
     python scripts/seed_pilot_company.py
     python scripts/seed_pilot_company.py "Mi Empresa Piloto" "76.111.222-3"
 """
-import sys
 
-from app.database import Base, SesionLocal, motor
-from app import models  # noqa: F401  (registra las tablas en Base.metadata)
-from app.models import Empresa
+import sys
+from pathlib import Path
+
+# Permite ejecutar el script desde la carpeta backend (python scripts/...)
+# sin configurar PYTHONPATH: agrega la carpeta backend a la ruta de importación.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from app.database import Base, SesionLocal, motor  # noqa: E402
+from app import models  # noqa: E402,F401  (registra las tablas en Base.metadata)
+from app.models import Empresa  # noqa: E402
 
 if __name__ == "__main__":
     nombre = sys.argv[1] if len(sys.argv) > 1 else "Retail Piloto SpA"

@@ -9,8 +9,16 @@ duplica).
 Uso:
     python scripts/seed_carriers_and_rules.py
 """
-from app.database import Base, SesionLocal, motor
-from app.models import Transportista, ReglaSLA
+
+import sys
+from pathlib import Path
+
+# Permite ejecutar el script desde la carpeta backend (python scripts/...)
+# sin configurar PYTHONPATH: agrega la carpeta backend a la ruta de importación.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from app.database import Base, SesionLocal, motor  # noqa: E402
+from app.models import Transportista, ReglaSLA  # noqa: E402
 
 # (nombre, horas_habiles_maximas_sla, multa_por_incumplimiento_clp)
 TRANSPORTISTAS_POR_DEFECTO = [
@@ -39,13 +47,15 @@ if __name__ == "__main__":
             .first()
         )
         if not regla_existente:
-            db.add(ReglaSLA(
-                transportista_id=transportista.id,
-                tipo_servicio=None,
-                horas_habiles_maximas=horas_maximas,
-                multa_por_incumplimiento=multa,
-                activa=True,
-            ))
+            db.add(
+                ReglaSLA(
+                    transportista_id=transportista.id,
+                    tipo_servicio=None,
+                    horas_habiles_maximas=horas_maximas,
+                    multa_por_incumplimiento=multa,
+                    activa=True,
+                )
+            )
         sembrados.append(f"{nombre} ({horas_maximas}h, ${multa})")
 
     db.commit()

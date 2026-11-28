@@ -1,0 +1,13 @@
+# Lo que NO entra a la imagen del backend
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+*.db
+*.log
+company_id.txt
+# Las claves nunca van dentro de la imagen: se entregan como variables de
+# entorno (docker compose) o como secretos (Secret Manager en Cloud Run).
+.env

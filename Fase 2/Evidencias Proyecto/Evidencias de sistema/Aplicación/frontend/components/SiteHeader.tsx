@@ -4,12 +4,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEmpresa } from "@/components/EmpresaContext";
 import { LogoWordmark } from "@/components/Logo";
+import { clases } from "@/lib/clases";
 
+/**
+ * Cabecera del sitio (aparece en todas las páginas): logo, menú principal y
+ * selector de la empresa activa.
+ */
+
+/** Opciones del menú principal. */
 const ENLACES = [
   { href: "/", texto: "Lotes" },
   { href: "/cargar", texto: "Cargar envíos" },
 ];
 
+/** Indica si un enlace del menú corresponde a la página actual (para resaltarlo). */
 function estaActivo(ruta: string, href: string): boolean {
   if (href === "/") return ruta === "/" || ruta.startsWith("/lotes");
   return ruta.startsWith(href);
@@ -24,7 +32,7 @@ export function SiteHeader() {
   const { empresas, empresa, elegirEmpresa } = useEmpresa();
 
   return (
-    <header className="bg-brand-950 text-white">
+    <header className="bg-brand-950 text-white print:hidden">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-2 px-5 py-3">
         <Link href="/" className="rounded-sm" aria-label="LogiSLA, ir a Lotes">
           <LogoWordmark />
@@ -39,7 +47,9 @@ export function SiteHeader() {
                 href={enlace.href}
                 aria-current={activo ? "page" : undefined}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                  activo ? "bg-white/12 text-white" : "text-brand-200 hover:bg-white/8 hover:text-white"
+                  activo
+                    ? "bg-white/12 text-white"
+                    : "text-brand-200 hover:bg-white/8 hover:text-white"
                 }`}
               >
                 {enlace.texto}
@@ -58,7 +68,10 @@ export function SiteHeader() {
                 id="empresa-activa"
                 value={empresa.id}
                 onChange={(e) => elegirEmpresa(e.target.value)}
-                className="max-w-56 truncate rounded-md border border-white/20 bg-brand-900 px-2.5 py-1.5 font-medium text-white"
+                className={clases(
+                  "max-w-56 truncate rounded-md border border-white/20 bg-brand-900 px-2.5",
+                  "py-1.5 font-medium text-white",
+                )}
               >
                 {empresas.map((e) => (
                   <option key={e.id} value={e.id}>

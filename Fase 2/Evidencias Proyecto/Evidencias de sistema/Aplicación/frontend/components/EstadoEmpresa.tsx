@@ -30,8 +30,8 @@ export function ConEmpresa({ children }: { children: (empresa: Empresa) => React
       <Aviso tipo="aviso" titulo="Todavía no hay ninguna empresa creada">
         <p>
           Crea una desde la carpeta <code>backend</code> con{" "}
-          <code>python scripts/seed_pilot_company.py &quot;Nombre de la empresa&quot;</code> y luego recarga
-          esta página. Si usas <code>iniciar.bat</code>, la empresa de prueba se crea sola.
+          <code>python scripts/seed_pilot_company.py &quot;Nombre de la empresa&quot;</code> y luego
+          recarga esta página. Si usas <code>iniciar.bat</code>, la empresa de prueba se crea sola.
         </p>
         <button onClick={reintentar} className={BOTON_SECUNDARIO}>
           Volver a buscar

@@ -1,0 +1,112 @@
+LOGISLA EN LA NUBE GRATIS: RENDER + NEON (sin tarjeta)
+=======================================================
+
+Resultado: LogiSLA publicado en internet, gratis, con las mismas imágenes
+Docker del proyecto:
+  - Render (render.com): construye y ejecuta los contenedores del backend y
+    del frontend (plan free, sin tarjeta).
+  - Neon (neon.com): la base de datos PostgreSQL (plan free, sin tarjeta).
+  - Las claves (URL de la base y clave de Gemini) no están en el código: se
+    escriben una sola vez en Render, que las guarda cifradas y las entrega al
+    contenedor como variables de entorno.
+
+Tiempo: unos 30 minutos la primera vez. Todo desde el navegador.
+
+Limitación del plan gratuito: cada servicio se apaga tras 15 minutos sin
+visitas y tarda cerca de un minuto en volver a responder. Para la defensa,
+abrir la aplicación 2 o 3 minutos antes de presentar.
+
+
+ANTES DE EMPEZAR
+----------------
+El proyecto debe estar subido a GitHub (guía de entrega, Parte 2), con el
+archivo render.yaml en la RAÍZ del repositorio (viene en la carpeta
+para_la_raiz_del_repositorio del zip). El repositorio puede ser privado.
+
+
+PASO 1. BASE DE DATOS EN NEON (5 minutos)
+-----------------------------------------
+1. Entrar a https://neon.com y crear la cuenta (con Google o GitHub).
+2. Crear un proyecto llamado logisla. Región: AWS US West 2 (Oregon), la
+   misma zona donde Render ejecuta los servicios.
+3. Botón "Connect": copiar la cadena de conexión. Tiene esta forma:
+     postgresql://usuario:clave@ep-xxxx.us-west-2.aws.neon.tech/neondb?sslmode=require
+   Las tablas las crea LogiSLA solo (migraciones de Alembic).
+
+
+PASO 2. CUENTA EN RENDER (5 minutos)
+------------------------------------
+1. Entrar a https://render.com > "Get Started" > registrarse con GitHub.
+2. Autorizar a Render a ver el repositorio LogiSLA_Capstone (se puede elegir
+   "Only select repositories" y marcar solo ese).
+
+
+PASO 3. CREAR LOS SERVICIOS CON EL BLUEPRINT (15 a 20 minutos de espera)
+------------------------------------------------------------------------
+1. En Render: "New" > "Blueprint" > elegir el repositorio LogiSLA_Capstone.
+   Render encuentra render.yaml y muestra los servicios logisla-backend y
+   logisla-frontend, ambos en plan Free.
+2. Nombre del Blueprint: LogiSLA. Render pide tres valores:
+     DATABASE_URL         la cadena de Neon del paso 1
+     GEMINI_API_KEY       la misma clave de backend\.env (si se deja vacía,
+                          la carta y el resumen salen con la plantilla)
+     NEXT_PUBLIC_API_URL  https://logisla-backend.onrender.com
+                          OBLIGATORIA: si queda vacía, Render no la guarda y
+                          el frontend busca el backend en localhost:8000.
+   La cadena de Neon se pega tal como la entrega Neon (postgresql://...):
+   LogiSLA le agrega el driver psycopg2 por su cuenta.
+   Si el repositorio no usa la rama main, elegir en "Branch" la rama real.
+3. "Deploy Blueprint". Render construye las dos imágenes Docker (el frontend
+   es el que más tarda).
+4. Cuando ambos servicios digan "Live", abrir logisla-backend y mirar su
+   dirección (arriba, en morado). Si NO es https://logisla-backend.onrender.com
+   (Render agrega letras al final si el nombre ya estaba ocupado):
+     logisla-frontend > Environment > editar NEXT_PUBLIC_API_URL con la
+     dirección real > Save > "Manual Deploy" > "Deploy latest commit".
+
+
+PASO 4. PROBAR
+--------------
+1. Abrir https://(dirección del backend)/health  ->  {"status":"ok"}
+2. Abrir la dirección de logisla-frontend: la portada de LogiSLA.
+3. Cargar envios_piloto.csv, auditar y revisar: $170.000, 13 fuera de plazo,
+   11 vencidas sin entrega, gráficos e informe.
+
+Cada vez que suban cambios a la rama main de GitHub, Render vuelve a
+desplegar solo.
+
+
+QUÉ MOSTRARLE A LA COMISIÓN
+---------------------------
+- La aplicación funcionando en su dirección pública de Render.
+- Panel de Render: los dos servicios, de tipo Docker, construidos desde los
+  Dockerfiles del proyecto (pestaña "Events" y "Logs").
+- logisla-backend > Environment: las claves aparecen ocultas; no están en
+  el repositorio (render.yaml solo declara sus nombres).
+- Neon > Tables: las tablas de LogiSLA y la tabla alembic_version.
+
+
+SI ALGO FALLA
+-------------
+- El backend no arranca ("Deploy failed" o reinicios): logisla-backend >
+  Logs. Lo más común es la URL de Neon mal copiada: Environment > corregir
+  DATABASE_URL > Save (vuelve a desplegar solo).
+- La portada dice "No se pudo conectar con LogiSLA (http://localhost:8000)":
+  NEXT_PUBLIC_API_URL quedó vacía. logisla-frontend > Environment > Add
+  variable > NEXT_PUBLIC_API_URL = dirección del backend > "Save, rebuild,
+  and deploy" (la dirección se graba al compilar, por eso hay que recompilar).
+- La portada abre pero no carga los lotes: NEXT_PUBLIC_API_URL no coincide
+  con la dirección real del backend (paso 3.4), o el backend estaba dormido:
+  esperar un minuto y recargar.
+- Para agregar o cambiar la clave de la IA después: logisla-backend >
+  Environment > GEMINI_API_KEY (o ANTHROPIC_API_KEY e IA_PRINCIPAL=claude) >
+  "Save, rebuild, and deploy".
+- Si Render pidiera una tarjeta para el plan Free, no ingresarla: anotar el
+  mensaje exacto para buscar otra alternativa.
+
+
+ALTERNATIVA CON GOOGLE CLOUD RUN
+--------------------------------
+Si más adelante el equipo dispone de una tarjeta para la prueba gratuita de
+Google Cloud, el despliegue en Cloud Run con Secret Manager está listo en
+deploy/desplegar_cloud_run.sh (instrucciones en deploy/LEEME_CLOUD_RUN.txt).

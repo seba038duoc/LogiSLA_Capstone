@@ -11,6 +11,7 @@ empresas ya entregan sus documentos bien estructurados y no tiene sentido
 ofrecer una pantalla de "arreglar el mapeo a mano" para el caso raro de
 un archivo que no se pueda leer.
 """
+
 import pandas as pd
 
 
@@ -19,13 +20,15 @@ def _bytes_csv(df: pd.DataFrame) -> bytes:
 
 
 def test_cargar_crea_lote_y_envios(cliente, empresa_ejemplo):
-    df = pd.DataFrame({
-        "N° Guía": ["G-001", "G-002", "G-003"],
-        "Transportista": ["Chilexpress", "Starken", "Chilexpress"],
-        "Fecha Despacho": ["2026-09-01", "2026-09-02", "2026-09-03"],
-        "Fecha Entrega": ["2026-09-05", "2026-09-06", ""],
-        "Destino": ["Santiago", "Valparaíso", "Concepción"],
-    })
+    df = pd.DataFrame(
+        {
+            "N° Guía": ["G-001", "G-002", "G-003"],
+            "Transportista": ["Chilexpress", "Starken", "Chilexpress"],
+            "Fecha Despacho": ["2026-09-01", "2026-09-02", "2026-09-03"],
+            "Fecha Entrega": ["2026-09-05", "2026-09-06", ""],
+            "Destino": ["Santiago", "Valparaíso", "Concepción"],
+        }
+    )
 
     response = cliente.post(
         f"/api/v1/lotes-auditoria/cargar?empresa_id={empresa_ejemplo.id}",
@@ -45,12 +48,16 @@ def test_cargar_crea_lote_y_envios(cliente, empresa_ejemplo):
     assert respuesta_get.json()["total_filas"] == 3
 
 
-def test_cargar_rechaza_columnas_obligatorias_no_reconocidas_sin_crear_lote(cliente, empresa_ejemplo):
-    df = pd.DataFrame({
-        "Numero de Guia": ["G-001"],
-        "Ciudad Destino": ["Santiago"],
-        # sin transportista ni fecha de despacho
-    })
+def test_cargar_rechaza_columnas_obligatorias_no_reconocidas_sin_crear_lote(
+    cliente, empresa_ejemplo
+):
+    df = pd.DataFrame(
+        {
+            "Numero de Guia": ["G-001"],
+            "Ciudad Destino": ["Santiago"],
+            # sin transportista ni fecha de despacho
+        }
+    )
 
     response = cliente.post(
         f"/api/v1/lotes-auditoria/cargar?empresa_id={empresa_ejemplo.id}",
@@ -72,9 +79,13 @@ def test_cargar_rechaza_extension_de_archivo_no_soportada(cliente, empresa_ejemp
 
 
 def test_cargar_rechaza_empresa_desconocida(cliente):
-    df = pd.DataFrame({
-        "Guia": ["G-001"], "Courier": ["Chilexpress"], "Fecha Despacho": ["2026-09-01"],
-    })
+    df = pd.DataFrame(
+        {
+            "Guia": ["G-001"],
+            "Courier": ["Chilexpress"],
+            "Fecha Despacho": ["2026-09-01"],
+        }
+    )
     response = cliente.post(
         "/api/v1/lotes-auditoria/cargar?empresa_id=no-existe",
         files={"file": ("envios.csv", _bytes_csv(df), "text/csv")},

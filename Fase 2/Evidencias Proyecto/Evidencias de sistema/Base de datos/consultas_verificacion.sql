@@ -1,93 +1,116 @@
--- =============================================================================
--- LogiSLA · Consultas de verificación para PostgreSQL 16
--- Ejecutar después de schema.sql y datos_prueba.sql:
---   psql -U logisla -d logisla -f consultas_verificacion.sql
+-- =====================================================================
+-- LogiSLA - Consultas de verificación de la base de datos
+-- Comprueban el esquema, los datos de prueba y el resultado de auditar
+-- la planilla envios_julio_2026.csv (103 guías).
 --
--- Cada consulta indica el resultado esperado con los datos de prueba.
--- =============================================================================
+-- Uso (con LogiSLA abierto y la planilla de julio ya auditada):
+--   psql -h 127.0.0.1 -p 5433 -U postgres -d logisla -f consultas_verificacion.sql -o resultado_verificacion.txt
+-- =====================================================================
 
-\echo '1. Cantidad de filas por tabla (esperado: 1 empresa, 4 transportistas, 4 reglas, 1 lote, 60 envíos)'
-SELECT 'empresas' AS tabla, COUNT(*) AS filas FROM empresas
-UNION ALL SELECT 'transportistas', COUNT(*) FROM transportistas
-UNION ALL SELECT 'reglas_sla', COUNT(*) FROM reglas_sla
-UNION ALL SELECT 'lotes_auditoria', COUNT(*) FROM lotes_auditoria
-UNION ALL SELECT 'envios', COUNT(*) FROM envios;
+\encoding UTF8
+\pset footer off
 
-\echo '2. Integridad referencial: envíos sin lote o con transportista inexistente (esperado: 0 y 0)'
-SELECT
-    (SELECT COUNT(*) FROM envios e LEFT JOIN lotes_auditoria l ON l.id = e.lote_auditoria_id WHERE l.id IS NULL) AS envios_sin_lote,
-    (SELECT COUNT(*) FROM envios e LEFT JOIN transportistas t ON t.id = e.transportista_id
-      WHERE e.transportista_id IS NOT NULL AND t.id IS NULL) AS envios_con_transportista_invalido;
+\echo '1. Versión del esquema (Alembic): debe ser 0002'
+SELECT version_num AS version_esquema FROM alembic_version;
 
-\echo '3. Regla SLA activa de cada transportista (esperado: 4 filas, una por transportista)'
-SELECT t.nombre AS transportista, r.horas_habiles_maximas, r.multa_por_incumplimiento, r.activa
-FROM transportistas t
-JOIN reglas_sla r ON r.transportista_id = t.id AND r.activa
+\echo ''
+\echo '2. Registros por tabla'
+SELECT 'empresas' AS tabla, count(*) AS registros FROM empresas
+UNION ALL SELECT 'transportistas', count(*) FROM transportistas
+UNION ALL SELECT 'reglas_sla', count(*) FROM reglas_sla
+UNION ALL SELECT 'lotes_auditoria', count(*) FROM lotes_auditoria
+UNION ALL SELECT 'envios', count(*) FROM envios;
+
+\echo ''
+\echo '3. Reglas SLA activas por transportista'
+SELECT t.nombre AS transportista,
+       s.horas_habiles_maximas AS plazo_horas_habiles,
+       s.multa_por_incumplimiento AS multa_por_guia
+FROM reglas_sla s
+JOIN transportistas t ON t.id = s.transportista_id
+WHERE s.activa
 ORDER BY t.nombre;
 
-\echo '4. Clasificación de las guías del lote (esperado: 36 en plazo, 13 fuera de plazo, 11 en tránsito)'
-SELECT
-    CASE
-        WHEN e.fecha_entrega IS NULL THEN 'EN_TRANSITO'
-        WHEN e.incumplio_sla THEN 'FUERA_DE_PLAZO'
-        WHEN e.incumplio_sla = FALSE THEN 'EN_PLAZO'
-        ELSE 'SIN_REGLA'
-    END AS resultado,
-    COUNT(*) AS guias
-FROM envios e
-WHERE e.lote_auditoria_id = '00000000-0000-4000-8000-000000000201'
-GROUP BY 1
-ORDER BY 1;
+\echo ''
+\echo '4. Lotes auditados'
+SELECT l.nombre_archivo, e.nombre AS empresa, l.estado, l.total_filas,
+       to_char(l.fecha_corte, 'DD-MM-YYYY HH24:MI') AS fecha_corte
+FROM lotes_auditoria l
+JOIN empresas e ON e.id = l.empresa_id
+ORDER BY l.fecha_creacion;
 
-\echo '5. Resumen del lote (esperado: 49 auditadas, 13 fuera de plazo, 73,5 % de cumplimiento, $170.000)'
-SELECT
-    COUNT(*) FILTER (WHERE incumplio_sla IS NOT NULL)                         AS guias_auditadas,
-    COUNT(*) FILTER (WHERE incumplio_sla)                                     AS fuera_de_plazo,
-    ROUND(100.0 * COUNT(*) FILTER (WHERE incumplio_sla = FALSE)
-          / NULLIF(COUNT(*) FILTER (WHERE incumplio_sla IS NOT NULL), 0), 1)  AS cumplimiento_pct,
-    COALESCE(SUM(monto_multa), 0)                                             AS multa_total
+-- Las consultas 5 a 8 usan el lote más reciente de la planilla de julio.
+\echo ''
+\echo '5. Resultado de las guías (planilla de julio)'
+WITH lote AS (
+    SELECT id FROM lotes_auditoria
+    WHERE nombre_archivo = 'envios_julio_2026.csv'
+    ORDER BY fecha_creacion DESC LIMIT 1
+)
+SELECT resultado, count(*) AS guias, coalesce(sum(monto_multa), 0) AS multas
 FROM envios
-WHERE lote_auditoria_id = '00000000-0000-4000-8000-000000000201';
+WHERE lote_auditoria_id = (SELECT id FROM lote)
+GROUP BY resultado
+ORDER BY guias DESC;
 
-\echo '6. Desglose por transportista (esperado: Starken 5 / $60.000, Chilexpress 4 / $60.000, Blue Express 2 / $30.000, Correos de Chile 2 / $20.000)'
-SELECT
-    t.nombre                                      AS transportista,
-    COUNT(*)                                      AS guias,
-    COUNT(*) FILTER (WHERE e.incumplio_sla)       AS fuera_de_plazo,
-    COALESCE(SUM(e.monto_multa), 0)               AS multa
+\echo ''
+\echo '6. Cumplimiento y total por reclamar (planilla de julio)'
+WITH lote AS (
+    SELECT id FROM lotes_auditoria
+    WHERE nombre_archivo = 'envios_julio_2026.csv'
+    ORDER BY fecha_creacion DESC LIMIT 1
+)
+SELECT count(*) FILTER (WHERE resultado IN ('CUMPLIDO', 'INCUMPLIDO')) AS guias_auditables,
+       count(*) FILTER (WHERE resultado = 'INCUMPLIDO') AS fuera_de_plazo,
+       round(100.0 * count(*) FILTER (WHERE resultado = 'CUMPLIDO')
+             / nullif(count(*) FILTER (WHERE resultado IN ('CUMPLIDO', 'INCUMPLIDO')), 0), 1)
+           AS cumplimiento_pct,
+       coalesce(sum(monto_multa), 0) AS total_por_reclamar
+FROM envios
+WHERE lote_auditoria_id = (SELECT id FROM lote);
+
+\echo ''
+\echo '7. Multas por transportista (planilla de julio)'
+WITH lote AS (
+    SELECT id FROM lotes_auditoria
+    WHERE nombre_archivo = 'envios_julio_2026.csv'
+    ORDER BY fecha_creacion DESC LIMIT 1
+)
+SELECT t.nombre AS transportista,
+       count(*) AS guias_fuera_de_plazo,
+       sum(e.monto_multa) AS multas
 FROM envios e
 JOIN transportistas t ON t.id = e.transportista_id
-WHERE e.lote_auditoria_id = '00000000-0000-4000-8000-000000000201'
+WHERE e.lote_auditoria_id = (SELECT id FROM lote) AND e.resultado = 'INCUMPLIDO'
 GROUP BY t.nombre
-ORDER BY multa DESC, t.nombre;
+ORDER BY multas DESC;
 
-\echo '7. Coherencia del cálculo: multa y atraso según la regla SLA (esperado: 0 filas inconsistentes)'
-SELECT e.numero_guia, t.nombre, e.incumplio_sla, e.horas_atraso, e.monto_multa
-FROM envios e
-JOIN transportistas t ON t.id = e.transportista_id
-JOIN reglas_sla r ON r.transportista_id = t.id AND r.activa
-WHERE e.incumplio_sla IS NOT NULL
-  AND (
-        (e.incumplio_sla       AND (e.horas_atraso <= 0 OR e.monto_multa <> r.multa_por_incumplimiento))
-     OR (NOT e.incumplio_sla   AND (e.horas_atraso <> 0 OR e.monto_multa <> 0))
-  );
-
-\echo '8. Guías en tránsito no deben tener resultado (esperado: 0)'
-SELECT COUNT(*) AS en_transito_con_resultado
+\echo ''
+\echo '8. Justificación de una guía: LSA-2026J0022 (Blue Express)'
+WITH lote AS (
+    SELECT id FROM lotes_auditoria
+    WHERE nombre_archivo = 'envios_julio_2026.csv'
+    ORDER BY fecha_creacion DESC LIMIT 1
+)
+SELECT numero_guia,
+       to_char(fecha_despacho, 'DD-MM-YYYY HH24:MI') AS despacho,
+       to_char(fecha_limite, 'DD-MM-YYYY HH24:MI') AS fecha_limite,
+       to_char(fecha_entrega, 'DD-MM-YYYY HH24:MI') AS entrega,
+       round(horas_habiles_transcurridas::numeric, 2) AS horas_habiles,
+       round(horas_atraso::numeric, 2) AS horas_atraso,
+       monto_multa, resultado
 FROM envios
-WHERE fecha_entrega IS NULL
-  AND (incumplio_sla IS NOT NULL OR horas_atraso IS NOT NULL OR monto_multa IS NOT NULL);
+WHERE lote_auditoria_id = (SELECT id FROM lote) AND numero_guia = 'LSA-2026J0022';
 
-\echo '9. Restricciones únicas: RUT de empresa y nombre de transportista duplicados (esperado: ERROR por clave duplicada)'
-\set ON_ERROR_STOP off
-INSERT INTO transportistas (nombre) VALUES ('Starken');
-INSERT INTO empresas (nombre, rut) VALUES ('Duplicada SpA', '76.987.654-3');
-\set ON_ERROR_STOP on
-
-\echo '10. Guías fuera de plazo con mayor atraso (detalle para la carta de reclamo)'
-SELECT e.numero_guia, t.nombre AS transportista, e.destino, e.horas_atraso, e.monto_multa
-FROM envios e
-JOIN transportistas t ON t.id = e.transportista_id
-WHERE e.incumplio_sla
-ORDER BY e.horas_atraso DESC, e.numero_guia
-LIMIT 5;
+\echo ''
+\echo '9. Integridad referencial: las tres cifras deben ser 0'
+SELECT
+    (SELECT count(*) FROM envios e
+      WHERE NOT EXISTS (SELECT 1 FROM lotes_auditoria l WHERE l.id = e.lote_auditoria_id))
+        AS envios_sin_lote,
+    (SELECT count(*) FROM envios
+      WHERE resultado = 'INCUMPLIDO' AND (monto_multa IS NULL OR monto_multa <= 0))
+        AS incumplidas_sin_multa,
+    (SELECT count(*) FROM envios
+      WHERE resultado IN ('CUMPLIDO', 'EN_TRANSITO', 'VENCIDA_SIN_ENTREGA') AND coalesce(monto_multa, 0) > 0)
+        AS multas_indebidas;

@@ -1,10 +1,17 @@
 """
 Fixtures compartidas para los tests de integración.
 
-Usamos SQLite en memoria en vez de levantar un Postgres real: es lo
-suficientemente compatible para probar la lógica de la API sin depender
-de infraestructura externa en CI.
+Por defecto cada prueba usa una base SQLite en memoria: es rápida y no
+necesita instalar nada.
+
+Si se define TEST_DATABASE_URL, las mismas pruebas corren sobre esa base
+(PostgreSQL en la integración continua de GitHub Actions). Cada prueba crea
+las tablas al empezar y las borra al terminar. Ejemplo:
+    TEST_DATABASE_URL=postgresql+psycopg2://logisla:logisla@localhost:5432/logisla_test
 """
+
+import os
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -15,14 +22,20 @@ from app.database import Base, obtener_bd
 from app.models import Empresa
 from app.main import app
 
+URL_BASE_PRUEBAS = os.getenv("TEST_DATABASE_URL")
+
 
 @pytest.fixture()
 def sesion_bd():
-    motor = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
+    if URL_BASE_PRUEBAS:
+        motor = create_engine(URL_BASE_PRUEBAS)
+        Base.metadata.drop_all(bind=motor)  # por si quedó algo de una ejecución anterior
+    else:
+        motor = create_engine(
+            "sqlite:///:memory:",
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
     SesionDePrueba = sessionmaker(autocommit=False, autoflush=False, bind=motor)
     Base.metadata.create_all(bind=motor)
 
@@ -31,6 +44,9 @@ def sesion_bd():
         yield sesion
     finally:
         sesion.close()
+        if URL_BASE_PRUEBAS:
+            Base.metadata.drop_all(bind=motor)
+        motor.dispose()
 
 
 @pytest.fixture()

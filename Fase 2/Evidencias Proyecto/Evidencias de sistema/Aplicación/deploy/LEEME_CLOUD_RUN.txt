@@ -1,0 +1,116 @@
+LOGISLA EN GOOGLE CLOUD RUN (HU-28) CON SECRET MANAGER (HU-23)
+================================================================
+
+Resultado: LogiSLA publicado en internet con dos servicios de Cloud Run
+(frontend y backend), la base de datos PostgreSQL en Neon y las claves
+(URL de la base y claves de la IA) guardadas en Google Secret Manager.
+
+Tiempo: unos 40 minutos la primera vez. No hay que instalar nada: todo se
+hace desde el navegador (Google Cloud Shell trae gcloud y Docker).
+
+
+QUÉ SE NECESITA (cuentas del equipo)
+------------------------------------
+- Una cuenta de Google personal (Gmail). Las cuentas institucionales pueden
+  tener restricciones que impiden publicar servicios.
+- Una tarjeta para activar la prueba gratuita de Google Cloud: entrega
+  US$300 de crédito por 90 días y no cobra mientras no se active la cuenta
+  de pago. LogiSLA usa una fracción mínima de ese crédito.
+- Una cuenta gratuita en Neon (PostgreSQL en la nube, sin tarjeta).
+- El archivo LogiSLA_final.zip.
+
+
+PASO 1. BASE DE DATOS EN NEON (5 minutos)
+-----------------------------------------
+1. Entrar a https://neon.com y crear la cuenta (se puede con Google o GitHub).
+2. Crear un proyecto llamado logisla. Región: una de Estados Unidos (por
+   ejemplo AWS US East), cerca de la región de Cloud Run us-central1.
+3. En el panel del proyecto, botón "Connect": copiar la cadena de conexión.
+   Tiene esta forma:
+     postgresql://usuario:clave@ep-xxxx.us-east-1.aws.neon.tech/neondb?sslmode=require
+   Guardarla un momento en el Bloc de notas: se pega en el paso 4.
+   (Las tablas las crea LogiSLA solo, con sus migraciones de Alembic.)
+
+
+PASO 2. PROYECTO EN GOOGLE CLOUD (10 minutos)
+---------------------------------------------
+1. Entrar a https://console.cloud.google.com con la cuenta Gmail.
+2. Activar la prueba gratuita (botón "Probar gratis" o "Activar"): pide la
+   tarjeta y el país (Chile).
+3. Arriba, en el selector de proyectos: "Proyecto nuevo". Nombre:
+   logisla-capstone. Anotar el ID del proyecto (puede terminar en números).
+4. Recomendado: Facturación > Presupuestos y alertas > Crear presupuesto de
+   US$5, con aviso por correo. Así reciben una alerta si algo consume crédito.
+
+
+PASO 3. SUBIR EL PROYECTO A CLOUD SHELL (5 minutos)
+---------------------------------------------------
+1. En la consola de Google Cloud, botón ">_" (Activar Cloud Shell), arriba a
+   la derecha. Se abre una terminal abajo.
+2. En la terminal, menú de tres puntos > "Subir" > elegir LogiSLA_final.zip.
+3. Escribir (una línea a la vez):
+     unzip -q LogiSLA_final.zip
+     cd LogiSLA_final/copiar_dentro_de_Aplicacion
+     gcloud config set project ID_DEL_PROYECTO
+
+
+PASO 4. DESPLEGAR (15 a 20 minutos, casi todo es espera)
+--------------------------------------------------------
+1. Escribir:
+     bash deploy/desplegar_cloud_run.sh
+2. El script pide, sin mostrar lo que se escribe:
+     - la URL de Neon del paso 1 (obligatoria);
+     - la clave de Gemini (la misma de backend\.env; Enter para omitir);
+     - la clave de Claude (Enter para omitir).
+   Esos datos quedan en Secret Manager, no en el código ni en las imágenes.
+3. Si gcloud pregunta algo (por ejemplo, autorizar Cloud Shell), aceptar.
+4. Al final muestra:
+     Aplicación: https://logisla-frontend-xxxxx.us-central1.run.app
+     API:        https://logisla-backend-xxxxx.us-central1.run.app
+   Abrir la dirección de la aplicación. La primera visita después de un rato
+   sin uso tarda unos segundos (Cloud Run apaga los servicios sin tráfico
+   para no gastar).
+
+Para publicar una versión nueva más adelante: repetir el paso 3 con el zip
+nuevo y volver a ejecutar el script (pregunta si se quieren cambiar los
+secretos; responder N para conservarlos).
+
+
+QUÉ MOSTRARLE A LA COMISIÓN
+---------------------------
+- La aplicación funcionando en la dirección de Cloud Run (cargar
+  envios_piloto.csv, auditar, informe).
+- Consola > Cloud Run: los servicios logisla-backend y logisla-frontend.
+- Consola > Seguridad > Secret Manager: los secretos logisla-database-url,
+  logisla-gemini-api-key (y logisla-anthropic-api-key si se usó). Sus
+  valores no se ven en ninguna parte del código.
+- Cloud Run > logisla-backend > Editar y desplegar nueva revisión >
+  Variables y secretos: DATABASE_URL y GEMINI_API_KEY vienen de Secret Manager.
+- Neon > Tables: las tablas de LogiSLA y la tabla alembic_version.
+
+
+COSTOS
+------
+- Cloud Run: nivel gratuito de 2 millones de solicitudes al mes.
+- Secret Manager, Cloud Build y Artifact Registry: centavos de dólar al mes
+  para este uso, cubiertos por el crédito de la prueba gratuita.
+- Neon: plan gratuito.
+- Después de la defensa, para no dejar nada encendido: Consola > IAM y
+  administración > Configuración > "Cerrar" el proyecto logisla-capstone.
+
+
+SI ALGO FALLA
+-------------
+- "PERMISSION_DENIED" o "billing": la facturación de prueba no está asociada
+  al proyecto (Facturación > Vincular una cuenta de facturación).
+- El backend no arranca: Cloud Run > logisla-backend > Registros. Lo más
+  común es la URL de Neon mal copiada: volver a ejecutar el script y
+  responder "s" para cambiar el secreto logisla-database-url.
+- La aplicación abre pero dice que no puede conectarse con el backend:
+  esperar un minuto (el primer arranque migra la base) y recargar.
+- Cualquier otro error: copiar el mensaje completo de la terminal o de los
+  Registros de Cloud Run para revisarlo.
+
+Nota: el script se probó con una simulación de gcloud; las imágenes Docker
+se construyen y prueban en GitHub Actions (trabajo "docker"). La primera
+ejecución contra la cuenta real del equipo es la prueba definitiva.

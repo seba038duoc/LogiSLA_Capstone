@@ -1,0 +1,6 @@
+# Lo que no se sube a Cloud Build al compilar el frontend
+node_modules/
+.next/
+.env.local
+*.log
+pruebas/

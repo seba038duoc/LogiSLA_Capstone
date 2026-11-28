@@ -8,21 +8,29 @@ import { entero } from "@/lib/formato";
  * siempre con los mismos colores y el mismo orden.
  */
 
+/** Categorías de la franja, en orden fijo, con su clase de color y su nombre. */
 export const CATEGORIAS = [
   { clave: "cumplidos", clase: "seg-cumplido", nombre: "En plazo" },
   { clave: "incumplidos", clase: "seg-incumplido", nombre: "Fuera de plazo" },
+  { clave: "vencidas_sin_entrega", clase: "seg-vencida", nombre: "Vencidas sin entrega" },
   { clave: "en_transito", clase: "seg-transito", nombre: "En tránsito" },
+  { clave: "datos_invalidos", clase: "seg-invalido", nombre: "Datos a revisar" },
   { clave: "sin_regla", clase: "seg-sin-regla", nombre: "Sin regla SLA" },
   { clave: "pendientes", clase: "seg-pendiente", nombre: "Sin auditar" },
 ] as const;
 
+/**
+ * Texto que describe la franja para lectores de pantalla,
+ * por ejemplo "36 en plazo, 13 fuera de plazo".
+ */
 function descripcion(conteos: Conteos): string {
   const partes = CATEGORIAS.filter((c) => conteos[c.clave] > 0).map(
-    (c) => `${entero(conteos[c.clave])} ${c.nombre.toLowerCase()}`
+    (c) => `${entero(conteos[c.clave])} ${c.nombre.toLowerCase()}`,
   );
   return partes.length ? partes.join(", ") : "Sin guías";
 }
 
+/** Barra horizontal con un segmento por categoría, proporcional a la cantidad de guías. */
 export function FranjaCumplimiento({
   conteos,
   alto = "h-2.5",

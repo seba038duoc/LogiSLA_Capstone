@@ -9,12 +9,22 @@ campos que calcula el motor de auditoría (Sprint 2: incumplio_sla,
 horas_atraso, monto_multa) quedaban nulos hasta ese sprint — por eso son
 nullable=True. El Sprint 2 ya los completa (ver app/audit_engine.py).
 """
+
 import enum
 import uuid
 
 from sqlalchemy import (
-    Column, String, Integer, Float, Boolean, DateTime, ForeignKey,
-    Enum, JSON, Text, func,
+    Column,
+    String,
+    Integer,
+    Float,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Enum,
+    JSON,
+    Text,
+    func,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -23,17 +33,22 @@ from app.database import Base
 
 
 def generar_uuid():
+    """Identificador único (UUID) en texto para las claves primarias."""
     return str(uuid.uuid4())
 
 
 class EstadoLote(str, enum.Enum):
-    PENDIENTE = "PENDIENTE"    # archivo cargado, aún no auditado por el motor
+    """Estados posibles de un lote de auditoría."""
+
+    PENDIENTE = "PENDIENTE"  # archivo cargado, aún no auditado por el motor
     PROCESANDO = "PROCESANDO"  # reservado para procesamiento asíncrono futuro
     COMPLETADO = "COMPLETADO"  # el motor de auditoría ya corrió sobre el lote
-    FALLIDO = "FALLIDO"        # reservado para errores de procesamiento
+    FALLIDO = "FALLIDO"  # reservado para errores de procesamiento
 
 
 class Empresa(Base):
+    """Empresa cliente que audita a sus transportistas (tabla empresas)."""
+
     __tablename__ = "empresas"
 
     id = Column(UUID(as_uuid=False), primary_key=True, default=generar_uuid)
@@ -45,6 +60,8 @@ class Empresa(Base):
 
 
 class Transportista(Base):
+    """Empresa de transporte o courier (tabla transportistas)."""
+
     __tablename__ = "transportistas"
 
     id = Column(UUID(as_uuid=False), primary_key=True, default=generar_uuid)
@@ -56,6 +73,8 @@ class Transportista(Base):
 
 
 class ReglaSLA(Base):
+    """Plazo en horas hábiles y multa por guía pactados con un transportista (tabla reglas_sla)."""
+
     __tablename__ = "reglas_sla"
 
     id = Column(UUID(as_uuid=False), primary_key=True, default=generar_uuid)
@@ -70,6 +89,8 @@ class ReglaSLA(Base):
 
 
 class LoteAuditoria(Base):
+    """Un archivo de envíos cargado y su estado de auditoría (tabla lotes_auditoria)."""
+
     __tablename__ = "lotes_auditoria"
 
     id = Column(UUID(as_uuid=False), primary_key=True, default=generar_uuid)
@@ -82,16 +103,23 @@ class LoteAuditoria(Base):
     mensaje_error = Column(Text, nullable=True)
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
     fecha_procesado = Column(DateTime(timezone=True), nullable=True)
+    # Fecha y hora local (Chile) a la que se hizo la auditoría: las guías sin
+    # entrega se evalúan contra este momento (migración 0002).
+    fecha_corte = Column(DateTime(timezone=True), nullable=True)
 
     empresa = relationship("Empresa", back_populates="lotes_auditoria")
     envios = relationship("Envio", back_populates="lote_auditoria", cascade="all, delete-orphan")
 
 
 class Envio(Base):
+    """Una guía del archivo y su resultado de auditoría (tabla envios)."""
+
     __tablename__ = "envios"
 
     id = Column(UUID(as_uuid=False), primary_key=True, default=generar_uuid)
-    lote_auditoria_id = Column(UUID(as_uuid=False), ForeignKey("lotes_auditoria.id"), nullable=False)
+    lote_auditoria_id = Column(
+        UUID(as_uuid=False), ForeignKey("lotes_auditoria.id"), nullable=False
+    )
     transportista_id = Column(UUID(as_uuid=False), ForeignKey("transportistas.id"), nullable=True)
     nombre_transportista_original = Column(String(255), nullable=True)
     numero_guia = Column(String(100), nullable=False)
@@ -100,10 +128,15 @@ class Envio(Base):
     destino = Column(String(255), nullable=True)
     valor_declarado = Column(Float, nullable=True)
 
-    # Estos tres los calcula el motor de auditoría (Sprint 2), no la ingesta.
+    # Estos campos los calcula el motor de auditoría, no la ingesta.
     incumplio_sla = Column(Boolean, nullable=True)
     horas_atraso = Column(Float, nullable=True)
     monto_multa = Column(Float, nullable=True)
+    # Justificación de la auditoría (migración 0002).
+    resultado = Column(String(30), nullable=True)  # categoría final de la guía
+    fecha_limite = Column(DateTime(timezone=True), nullable=True)  # vencimiento del plazo SLA
+    horas_habiles_transcurridas = Column(Float, nullable=True)  # hasta la entrega o el corte
+    observacion = Column(Text, nullable=True)  # por qué los datos no permiten auditarla
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
 
