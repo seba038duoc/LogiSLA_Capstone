@@ -129,8 +129,8 @@ npm test
 ## 📁 Estructura del repositorio
 
 * `Fase 1/`: definición y planificación del proyecto.
-* `Fase 2/`: desarrollo. Contiene la guía de desarrollo, el informe final, los diarios de reflexión, las evidencias ágiles, la presentación, la aplicación y la base de datos al cierre de la Fase 2.
-* `Fase 3/`: cierre. Contiene los diarios de reflexión de la Fase 3, la presentación final y la versión final de la aplicación (`Fase 3/Evidencias Grupales/Aplicacion/`).
+* `Fase 2/`: desarrollo. Contiene la guía de desarrollo, el informe final, los diarios de reflexión, las evidencias ágiles, la presentación y la versión final de la aplicación y de la base de datos (`Fase 2/Evidencias Proyecto/Evidencias de sistema/`).
+* `Fase 3/`: cierre. Contiene los diarios de reflexión de la Fase 3 y la presentación final.
 
 ---
 
