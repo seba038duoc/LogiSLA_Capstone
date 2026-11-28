@@ -1,0 +1,50 @@
+ version_esquema 
+-----------------
+ 0002
+
+      tabla      | registros 
+-----------------+-----------
+ empresas        |         1
+ transportistas  |         5
+ reglas_sla      |         4
+ lotes_auditoria |         1
+ envios          |       103
+
+  transportista   | plazo_horas_habiles | multa_por_guia 
+------------------+---------------------+----------------
+ Blue Express     |                  48 |          15000
+ Chilexpress      |                  48 |          15000
+ Correos de Chile |                  72 |          10000
+ Starken          |                  60 |          12000
+
+    nombre_archivo     |      empresa      |   estado   | total_filas |   fecha_corte    
+-----------------------+-------------------+------------+-------------+------------------
+ envios_julio_2026.csv | Retail Piloto SpA | COMPLETADO |         103 | 27-11-2026 22:48
+
+      resultado      | guias | multas 
+---------------------+-------+--------
+ CUMPLIDO            |    70 |      0
+ INCUMPLIDO          |    18 | 241000
+ VENCIDA_SIN_ENTREGA |     8 |      0
+ SIN_REGLA           |     4 |      0
+ DATOS_INVALIDOS     |     3 |      0
+
+ guias_auditables | fuera_de_plazo | cumplimiento_pct | total_por_reclamar 
+------------------+----------------+------------------+--------------------
+               88 |             18 |             79.5 |             241000
+
+  transportista   | guias_fuera_de_plazo | multas 
+------------------+----------------------+--------
+ Chilexpress      |                    7 | 105000
+ Blue Express     |                    4 |  60000
+ Correos de Chile |                    4 |  40000
+ Starken          |                    3 |  36000
+
+  numero_guia  |     despacho     |   fecha_limite   |     entrega      | horas_habiles | horas_atraso | monto_multa | resultado  
+---------------+------------------+------------------+------------------+---------------+--------------+-------------+------------
+ LSA-2026J0022 | 10-07-2026 10:30 | 20-07-2026 13:30 | 23-07-2026 13:45 |         75.25 |        27.25 |       15000 | INCUMPLIDO
+
+ envios_sin_lote | incumplidas_sin_multa | multas_indebidas 
+-----------------+-----------------------+------------------
+               0 |                     0 |                0
+

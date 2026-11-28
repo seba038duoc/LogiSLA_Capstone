@@ -10,19 +10,19 @@
 \encoding UTF8
 \pset footer off
 
-\echo '1. Versión del esquema (Alembic): debe ser 0002'
+\qecho '1. Versión del esquema (Alembic): debe ser 0002'
 SELECT version_num AS version_esquema FROM alembic_version;
 
-\echo ''
-\echo '2. Registros por tabla'
+\qecho ''
+\qecho '2. Registros por tabla'
 SELECT 'empresas' AS tabla, count(*) AS registros FROM empresas
 UNION ALL SELECT 'transportistas', count(*) FROM transportistas
 UNION ALL SELECT 'reglas_sla', count(*) FROM reglas_sla
 UNION ALL SELECT 'lotes_auditoria', count(*) FROM lotes_auditoria
 UNION ALL SELECT 'envios', count(*) FROM envios;
 
-\echo ''
-\echo '3. Reglas SLA activas por transportista'
+\qecho ''
+\qecho '3. Reglas SLA activas por transportista'
 SELECT t.nombre AS transportista,
        s.horas_habiles_maximas AS plazo_horas_habiles,
        s.multa_por_incumplimiento AS multa_por_guia
@@ -31,8 +31,8 @@ JOIN transportistas t ON t.id = s.transportista_id
 WHERE s.activa
 ORDER BY t.nombre;
 
-\echo ''
-\echo '4. Lotes auditados'
+\qecho ''
+\qecho '4. Lotes auditados'
 SELECT l.nombre_archivo, e.nombre AS empresa, l.estado, l.total_filas,
        to_char(l.fecha_corte, 'DD-MM-YYYY HH24:MI') AS fecha_corte
 FROM lotes_auditoria l
@@ -40,8 +40,8 @@ JOIN empresas e ON e.id = l.empresa_id
 ORDER BY l.fecha_creacion;
 
 -- Las consultas 5 a 8 usan el lote más reciente de la planilla de julio.
-\echo ''
-\echo '5. Resultado de las guías (planilla de julio)'
+\qecho ''
+\qecho '5. Resultado de las guías (planilla de julio)'
 WITH lote AS (
     SELECT id FROM lotes_auditoria
     WHERE nombre_archivo = 'envios_julio_2026.csv'
@@ -53,8 +53,8 @@ WHERE lote_auditoria_id = (SELECT id FROM lote)
 GROUP BY resultado
 ORDER BY guias DESC;
 
-\echo ''
-\echo '6. Cumplimiento y total por reclamar (planilla de julio)'
+\qecho ''
+\qecho '6. Cumplimiento y total por reclamar (planilla de julio)'
 WITH lote AS (
     SELECT id FROM lotes_auditoria
     WHERE nombre_archivo = 'envios_julio_2026.csv'
@@ -69,8 +69,8 @@ SELECT count(*) FILTER (WHERE resultado IN ('CUMPLIDO', 'INCUMPLIDO')) AS guias_
 FROM envios
 WHERE lote_auditoria_id = (SELECT id FROM lote);
 
-\echo ''
-\echo '7. Multas por transportista (planilla de julio)'
+\qecho ''
+\qecho '7. Multas por transportista (planilla de julio)'
 WITH lote AS (
     SELECT id FROM lotes_auditoria
     WHERE nombre_archivo = 'envios_julio_2026.csv'
@@ -85,8 +85,8 @@ WHERE e.lote_auditoria_id = (SELECT id FROM lote) AND e.resultado = 'INCUMPLIDO'
 GROUP BY t.nombre
 ORDER BY multas DESC;
 
-\echo ''
-\echo '8. Justificación de una guía: LSA-2026J0022 (Blue Express)'
+\qecho ''
+\qecho '8. Justificación de una guía: LSA-2026J0022 (Blue Express)'
 WITH lote AS (
     SELECT id FROM lotes_auditoria
     WHERE nombre_archivo = 'envios_julio_2026.csv'
@@ -102,8 +102,8 @@ SELECT numero_guia,
 FROM envios
 WHERE lote_auditoria_id = (SELECT id FROM lote) AND numero_guia = 'LSA-2026J0022';
 
-\echo ''
-\echo '9. Integridad referencial: las tres cifras deben ser 0'
+\qecho ''
+\qecho '9. Integridad referencial: las tres cifras deben ser 0'
 SELECT
     (SELECT count(*) FROM envios e
       WHERE NOT EXISTS (SELECT 1 FROM lotes_auditoria l WHERE l.id = e.lote_auditoria_id))
